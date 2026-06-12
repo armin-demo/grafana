@@ -298,7 +298,7 @@ func (hs *HTTPServer) getThemeForIndexData(themePrefId string, themeURLParam str
 		theme := pref.GetThemeByID(themePrefId)
 		// TODO refactor
 		//nolint:staticcheck // not yet migrated to OpenFeature
-		if !theme.IsExtra || hs.Features.IsEnabledGlobally(featuremgmt.FlagGrafanaconThemes) {
+		if !theme.IsExtra || theme.ID == "green" || hs.Features.IsEnabledGlobally(featuremgmt.FlagGrafanaconThemes) {
 			return theme
 		}
 	}
