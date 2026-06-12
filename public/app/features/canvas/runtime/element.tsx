@@ -7,6 +7,7 @@ import {
   getLinksSupplier,
   type LinkModel,
   type ScopedVars,
+  textUtil,
   type ValueLinkConfig,
   OneClickMode,
   type ActionModel,
@@ -986,7 +987,8 @@ export class ElementState implements LayerElement {
     if (this.oneClickMode === OneClickMode.Link) {
       let primaryDataLink = this.getPrimaryDataLink();
       if (primaryDataLink) {
-        window.open(primaryDataLink.href, primaryDataLink.target ?? '_self');
+        const sanitizedHref = textUtil.sanitizeUrl(primaryDataLink.href);
+        window.open(sanitizedHref, primaryDataLink.target ?? '_self');
       }
     } else if (this.oneClickMode === OneClickMode.Action) {
       const primaryAction = this.getPrimaryAction();
