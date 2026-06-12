@@ -95,6 +95,7 @@ import (
 	"github.com/grafana/grafana/pkg/services/dashboardsnapshots"
 	dashsnapstore "github.com/grafana/grafana/pkg/services/dashboardsnapshots/database"
 	dashsnapsvc "github.com/grafana/grafana/pkg/services/dashboardsnapshots/service"
+	"github.com/grafana/grafana/pkg/services/dashboardview"
 	"github.com/grafana/grafana/pkg/services/dashboardversion/dashverimpl"
 	"github.com/grafana/grafana/pkg/services/datasourceproxy"
 	"github.com/grafana/grafana/pkg/services/datasources"
@@ -275,6 +276,8 @@ var wireBasicSet = wire.NewSet(
 	wire.Bind(new(shorturls.Service), new(*shorturlimpl.ShortURLService)),
 	queryhistory.ProvideService,
 	wire.Bind(new(queryhistory.Service), new(*queryhistory.QueryHistoryService)),
+	dashboardview.ProvideService,
+	wire.Bind(new(dashboardview.Service), new(*dashboardview.DashboardViewService)),
 	correlations.ProvideService,
 	wire.Bind(new(correlations.Service), new(*correlations.CorrelationsService)),
 	quotaimpl.ProvideService,

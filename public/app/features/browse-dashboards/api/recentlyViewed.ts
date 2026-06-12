@@ -34,3 +34,8 @@ export async function getRecentlyViewedDashboards(maxItems = 5): Promise<Dashboa
     return [];
   }
 }
+
+export async function getLatestViewedDashboard(): Promise<DashboardQueryResult | undefined> {
+  const dashboards = await getRecentlyViewedDashboards(1);
+  return dashboards[0];
+}

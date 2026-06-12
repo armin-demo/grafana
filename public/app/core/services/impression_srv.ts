@@ -3,6 +3,11 @@ import { filter, isArray, isNumber, isString } from 'lodash';
 import { store } from '@grafana/data';
 import { getBackendSrv } from '@grafana/runtime';
 
+import {
+  clearDashboardViews,
+  fetchDashboardViews,
+  recordDashboardView,
+} from '../../features/browse-dashboards/api/dashboardViewsApi';
 import { contextSrv } from './context_srv';
 
 export class ImpressionSrv {
@@ -28,6 +33,12 @@ export class ImpressionSrv {
       impressions.pop();
     }
     store.set(impressionsKey, JSON.stringify(impressions));
+
+    if (contextSrv.isSignedIn) {
+      recordDashboardView(dashboardUID).catch(() => {
+        // Keep local impressions when the backend is unavailable.
+      });
+    }
   }
 
   private async convertToUIDs() {
@@ -49,6 +60,16 @@ export class ImpressionSrv {
 
   /** Returns an array of internal (string) dashboard UIDs */
   async getDashboardOpened(): Promise<string[]> {
+    if (contextSrv.isSignedIn) {
+      try {
+        const dashboardUids = await fetchDashboardViews();
+        store.set(this.impressionKey(), JSON.stringify(dashboardUids));
+        return dashboardUids;
+      } catch (_) {
+        // Fall back to local impressions when the backend is unavailable.
+      }
+    }
+
     // TODO should be removed after UID migration
     try {
       await this.convertToUIDs();
@@ -60,7 +81,14 @@ export class ImpressionSrv {
 
   clearImpressions() {
     store.set(this.impressionKey(), JSON.stringify([]));
+
+    if (contextSrv.isSignedIn) {
+      clearDashboardViews().catch(() => {
+        // Local impressions are already cleared.
+      });
+    }
   }
+
   impressionKey() {
     return 'dashboard_impressions-' + contextSrv.user.orgId;
   }

@@ -5,6 +5,8 @@ import { config } from '@grafana/runtime';
 import { Page } from 'app/core/components/Page/Page';
 import { isOnPrem } from 'app/core/utils/isOnPrem';
 
+import { LatestViewedDashboard } from 'app/features/browse-dashboards/components/LatestViewedDashboard';
+
 import { DashboardTabs } from './DashboardTabs/DashboardTabs';
 import useHomeGreeting from './useHomeGreeting';
 
@@ -34,6 +36,7 @@ export default function HomePage() {
       layout={PageLayoutType.Home}
     >
       <Page.Contents>
+        <LatestViewedDashboard />
         <DashboardTabs />
       </Page.Contents>
     </Page>

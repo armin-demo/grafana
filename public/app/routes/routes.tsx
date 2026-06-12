@@ -549,6 +549,15 @@ export function getAppRoutes(): RouteDescriptor[] {
       ),
     },
     {
+      path: '/dashboards/recently-viewed',
+      component: SafeDynamicImport(
+        () =>
+          import(
+            /* webpackChunkName: "RecentlyViewedDashboardsPage" */ 'app/features/browse-dashboards/RecentlyViewedDashboardsPage'
+          )
+      ),
+    },
+    {
       // Redirect the /femt dev page to the root
       path: '/femt',
       component: () => <Navigate replace to="/" />,
