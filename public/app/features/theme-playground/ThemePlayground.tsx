@@ -8,6 +8,7 @@ import debug from '@grafana/data/themes/definitions/debug.json';
 import desertbloom from '@grafana/data/themes/definitions/desertbloom.json';
 import deut_prot_dark from '@grafana/data/themes/definitions/deut_prot_dark.json';
 import deut_prot_light from '@grafana/data/themes/definitions/deut_prot_light.json';
+import evergreen from '@grafana/data/themes/definitions/evergreen.json';
 import gildedgrove from '@grafana/data/themes/definitions/gildedgrove.json';
 import gloom from '@grafana/data/themes/definitions/gloom.json';
 import mars from '@grafana/data/themes/definitions/mars.json';
@@ -56,6 +57,7 @@ const experimentalDefinitions: Record<string, unknown> = {
   desertbloom,
   deut_prot_dark,
   deut_prot_light,
+  evergreen,
   gildedgrove,
   gloom,
   mars,
