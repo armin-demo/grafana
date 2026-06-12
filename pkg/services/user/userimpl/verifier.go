@@ -114,6 +114,13 @@ func (s *Verifier) Complete(ctx context.Context, cmd user.CompleteEmailVerifyCom
 		return errExpiredCode.Errorf("verification code has expired")
 	}
 
+	if cmd.User != nil {
+		callerID, err := cmd.User.GetInternalID()
+		if err == nil && callerID != tmpUsr.InvitedByID {
+			return errInvalidCode.Errorf("verification code does not belong to the authenticated user")
+		}
+	}
+
 	usr, err := s.us.GetByID(ctx, &user.GetUserByIDQuery{ID: tmpUsr.InvitedByID})
 	if err != nil {
 		return err

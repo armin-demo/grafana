@@ -335,7 +335,7 @@ func (hs *HTTPServer) UpdateUserEmail(c *contextmodel.ReqContext) response.Respo
 		return hs.RedirectResponseWithError(c, errors.New("bad request data"))
 	}
 
-	if err := hs.userVerifier.Complete(c.Req.Context(), user.CompleteEmailVerifyCommand{Code: code}); err != nil {
+	if err := hs.userVerifier.Complete(c.Req.Context(), user.CompleteEmailVerifyCommand{User: c.SignedInUser, Code: code}); err != nil {
 		return hs.RedirectResponseWithError(c, err)
 	}
 
