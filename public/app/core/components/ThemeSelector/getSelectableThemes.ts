@@ -13,6 +13,7 @@ export function getSelectableThemes() {
 
   if (config.featureToggles.grafanaconThemes) {
     allowedExtraThemes.push('desertbloom');
+    allowedExtraThemes.push('evergreen');
     allowedExtraThemes.push('gildedgrove');
     allowedExtraThemes.push('sapphiredusk');
     allowedExtraThemes.push('tron');

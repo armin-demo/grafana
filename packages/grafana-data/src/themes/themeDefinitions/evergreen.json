@@ -1,0 +1,79 @@
+{
+  "name": "Evergreen",
+  "id": "evergreen",
+  "colors": {
+    "mode": "dark",
+    "border": {
+      "weak": "rgba(126, 231, 135, 0.14)",
+      "medium": "rgba(126, 231, 135, 0.24)",
+      "strong": "rgba(126, 231, 135, 0.36)"
+    },
+    "text": {
+      "primary": "#EAF7EF",
+      "secondary": "#A6C8AF",
+      "disabled": "#6F8D77",
+      "link": "#7EE787",
+      "maxContrast": "#FFFFFF"
+    },
+    "primary": {
+      "main": "#45D483",
+      "text": "#7EE787",
+      "border": "#7EE787",
+      "name": "primary",
+      "shade": "#59E396",
+      "transparent": "#45D48329",
+      "contrastText": "#07120D",
+      "borderTransparent": "#45D48340"
+    },
+    "secondary": {
+      "main": "#1F3328",
+      "shade": "#284234",
+      "transparent": "rgba(126, 231, 135, 0.08)",
+      "text": "#B8D8C2",
+      "contrastText": "#EAF7EF",
+      "border": "rgba(126, 231, 135, 0.12)",
+      "name": "secondary",
+      "borderTransparent": "rgba(126, 231, 135, 0.25)"
+    },
+    "info": {
+      "main": "#4CC9C0",
+      "text": "#A7F3EA",
+      "border": "#6DE3D8"
+    },
+    "error": {
+      "main": "#E05260"
+    },
+    "success": {
+      "main": "#45D483"
+    },
+    "warning": {
+      "main": "#E0B85C"
+    },
+    "background": {
+      "canvas": "#07120D",
+      "primary": "#0D1B14",
+      "secondary": "#13261C",
+      "elevated": "#173022"
+    },
+    "action": {
+      "hover": "rgba(126, 231, 135, 0.14)",
+      "selected": "rgba(126, 231, 135, 0.18)",
+      "selectedBorder": "#45D483",
+      "focus": "rgba(126, 231, 135, 0.22)",
+      "hoverOpacity": 0.08,
+      "disabledText": "#6F8D77",
+      "disabledBackground": "rgba(126, 231, 135, 0.05)",
+      "disabledOpacity": 0.38
+    },
+    "gradients": {
+      "brandHorizontal": "linear-gradient(270deg, #45D483 0%, #7EE787 100%)",
+      "brandVertical": "linear-gradient(0deg, #45D483 0%, #7EE787 100%)"
+    },
+    "contrastThreshold": 3,
+    "hoverFactor": 0.03,
+    "tonalOffset": 0.15
+  },
+  "visualization": {
+    "palette": ["#45D483", "#7EE787", "#4CC9C0", "#A6E22E", "#E0B85C", "#E05260", "#8FBF7F"]
+  }
+}
