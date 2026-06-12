@@ -6,6 +6,7 @@ import debug from './themeDefinitions/debug.json';
 import desertbloom from './themeDefinitions/desertbloom.json';
 import deut_prot_dark from './themeDefinitions/deut_prot_dark.json';
 import deut_prot_light from './themeDefinitions/deut_prot_light.json';
+import evergreen from './themeDefinitions/evergreen.json';
 import gildedgrove from './themeDefinitions/gildedgrove.json';
 import gloom from './themeDefinitions/gloom.json';
 import mars from './themeDefinitions/mars.json';
@@ -30,6 +31,7 @@ const extraThemes: { [key: string]: unknown } = {
   desertbloom,
   deut_prot_dark,
   deut_prot_light,
+  evergreen,
   gildedgrove,
   gloom,
   mars,
