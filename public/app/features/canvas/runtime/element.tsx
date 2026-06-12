@@ -12,6 +12,7 @@ import {
   type ActionModel,
   type ActionVariableInput,
   ActionType,
+  textUtil,
 } from '@grafana/data';
 import { t } from '@grafana/i18n';
 import { config } from '@grafana/runtime';
@@ -986,7 +987,8 @@ export class ElementState implements LayerElement {
     if (this.oneClickMode === OneClickMode.Link) {
       let primaryDataLink = this.getPrimaryDataLink();
       if (primaryDataLink) {
-        window.open(primaryDataLink.href, primaryDataLink.target ?? '_self');
+        const sanitizedHref = textUtil.sanitizeUrl(primaryDataLink.href);
+        window.open(sanitizedHref, primaryDataLink.target ?? '_self');
       }
     } else if (this.oneClickMode === OneClickMode.Action) {
       const primaryAction = this.getPrimaryAction();

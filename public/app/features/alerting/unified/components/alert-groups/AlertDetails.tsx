@@ -1,6 +1,6 @@
 import { css } from '@emotion/css';
 
-import { type GrafanaTheme2 } from '@grafana/data';
+import { type GrafanaTheme2, textUtil } from '@grafana/data';
 import { Trans, t } from '@grafana/i18n';
 import { LinkButton, useStyles2 } from '@grafana/ui';
 import { contextSrv } from 'app/core/services/context_srv';
@@ -59,7 +59,7 @@ export const AlertDetails = ({ alert, alertManagerSourceName }: AmNotificationsA
           </Authorize>
         )}
         {isSeeSourceButtonEnabled && alert.generatorURL && (
-          <LinkButton className={styles.button} href={alert.generatorURL} icon={'chart-line'} size={'sm'}>
+          <LinkButton className={styles.button} href={textUtil.sanitizeUrl(alert.generatorURL)} icon={'chart-line'} size={'sm'}>
             {isGrafanaSource
               ? t('alerting.alert-details.button-see-rule', 'See alert rule')
               : t('alerting.alert-details.button-see-source', 'See source')}

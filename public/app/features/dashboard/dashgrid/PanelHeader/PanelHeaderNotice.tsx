@@ -1,7 +1,7 @@
 import { css } from '@emotion/css';
 import * as React from 'react';
 
-import { type GrafanaTheme2, type QueryResultMetaNotice } from '@grafana/data';
+import { type GrafanaTheme2, type QueryResultMetaNotice, textUtil } from '@grafana/data';
 import { Icon, ToolbarButton, Tooltip, useStyles2 } from '@grafana/ui';
 import { getFocusStyles, getMouseFocusStyles } from '@grafana/ui/internal';
 
@@ -31,7 +31,7 @@ export const PanelHeaderNotice = ({ notice, onClick }: Props) => {
 
   if (notice.link) {
     return (
-      <a className={styles.notice} aria-label={notice.text} href={notice.link} target="_blank" rel="noreferrer">
+      <a className={styles.notice} aria-label={notice.text} href={textUtil.sanitizeUrl(notice.link)} target="_blank" rel="noreferrer">
         <Icon name={iconName} style={{ marginRight: '8px' }} size="md" />
       </a>
     );
