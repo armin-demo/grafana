@@ -330,6 +330,27 @@ func TestPatch_toCreate(t *testing.T) {
 	assert.Equal(t, "light", stored.Theme)
 }
 
+func TestPatch_dashboardHistory(t *testing.T) {
+	prefService := &Service{
+		store:    newFake(),
+		defaults: prefsFromConfig(setting.NewCfg()),
+	}
+
+	recentDashboardUIDs := []string{"dash-a", "dash-b"}
+	err := prefService.Patch(context.Background(), &pref.PatchPreferenceCommand{
+		OrgID:  1,
+		UserID: 2,
+		DashboardHistory: &pref.DashboardHistoryPreference{
+			RecentDashboardUIDs: recentDashboardUIDs,
+		},
+	})
+	require.NoError(t, err)
+
+	stored := prefService.store.(*inmemStore).preference[preferenceKey{OrgID: 1, UserID: 2}]
+	require.NotNil(t, stored.JSONData)
+	assert.Equal(t, recentDashboardUIDs, stored.JSONData.DashboardHistory.RecentDashboardUIDs)
+}
+
 func TestSave(t *testing.T) {
 	prefService := &Service{
 		store:    newFake(),

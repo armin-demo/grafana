@@ -62,6 +62,7 @@ func UpdatePreferencesFor(ctx context.Context,
 		HomeDashboardUID: dtoCmd.HomeDashboardUID,
 		QueryHistory:     dtoCmd.QueryHistory,
 		Navbar:           dtoCmd.Navbar,
+		DashboardHistory: dtoCmd.DashboardHistory,
 	}
 
 	if err := preferenceService.Save(ctx, &saveCmd); err != nil {
@@ -111,6 +112,13 @@ func GetPreferencesFor(ctx context.Context,
 			dto.QueryHistory = &preferences.PreferencesQueryHistoryPreference{
 				HomeTab: &preference.JSONData.QueryHistory.HomeTab,
 			}
+		}
+
+		if preference.JSONData.DashboardHistory.RecentDashboardUIDs != nil {
+			dto.DashboardHistory = &preferences.PreferencesDashboardHistoryPreference{
+				RecentDashboardUIDs: []string{},
+			}
+			dto.DashboardHistory.RecentDashboardUIDs = preference.JSONData.DashboardHistory.RecentDashboardUIDs
 		}
 	}
 
