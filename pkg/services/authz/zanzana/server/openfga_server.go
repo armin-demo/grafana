@@ -245,9 +245,9 @@ func NewOpenFGAHttpServer(cfg setting.ZanzanaServerSettings, grpcSrv grpcserver.
 	return &http.Server{
 		Addr: cfg.OpenFGAHttpAddr,
 		Handler: cors.New(cors.Options{
-			AllowedOrigins:   []string{"*"},
-			AllowCredentials: true,
-			AllowedHeaders:   []string{"*"},
+			AllowedOrigins:   []string{},
+			AllowCredentials: false,
+			AllowedHeaders:   []string{"Authorization", "Content-Type", "X-Access-Token"},
 			AllowedMethods: []string{http.MethodGet, http.MethodPost,
 				http.MethodHead, http.MethodPatch, http.MethodDelete, http.MethodPut},
 		}).Handler(mux),

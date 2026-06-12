@@ -246,7 +246,10 @@ func SnapshotPublicModeOrCreate(cfg *setting.Cfg, ac2 ac.AccessControl) web.Hand
 			return
 		}
 
-		ac.Middleware(ac2)(ac.EvalPermission(dashboards.ActionSnapshotsCreate))
+		handler := ac.Middleware(ac2)(ac.EvalPermission(dashboards.ActionSnapshotsCreate))
+		if h, ok := handler.(func(*contextmodel.ReqContext)); ok {
+			h(c)
+		}
 	}
 }
 
@@ -263,7 +266,10 @@ func SnapshotPublicModeOrDelete(cfg *setting.Cfg, ac2 ac.AccessControl) web.Hand
 			return
 		}
 
-		ac.Middleware(ac2)(ac.EvalPermission(dashboards.ActionSnapshotsDelete))
+		handler := ac.Middleware(ac2)(ac.EvalPermission(dashboards.ActionSnapshotsDelete))
+		if h, ok := handler.(func(*contextmodel.ReqContext)); ok {
+			h(c)
+		}
 	}
 }
 

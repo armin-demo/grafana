@@ -176,6 +176,10 @@ func (hs *HTTPServer) AdminUpdateUserPermissions(c *contextmodel.ReqContext) res
 		return response.Error(http.StatusInternalServerError, "Failed to update user permissions", err)
 	}
 
+	if err := hs.AuthTokenService.RevokeAllUserTokens(c.Req.Context(), userID); err != nil {
+		hs.log.Warn("Failed to revoke user tokens after permission change", "userId", userID, "error", err)
+	}
+
 	return response.Success("User permissions updated")
 }
 
