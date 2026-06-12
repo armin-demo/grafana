@@ -722,7 +722,7 @@ func (hs *HTTPServer) addMiddlewaresAndStaticRoutes() {
 	m.Use(hs.frontendLogEndpoints())
 
 	m.UseMiddleware(hs.ContextHandler.Middleware)
-	m.Use(middleware.OrgRedirect(hs.Cfg, hs.userService))
+	m.Use(middleware.OrgRedirect(hs.Cfg, hs.userService, hs.orgService))
 
 	// needs to be after context handler
 	if hs.Cfg.EnforceDomain {

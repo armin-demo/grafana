@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import type uPlot from 'uplot';
 
 import { type GrafanaTheme2, type LinkModel } from '@grafana/data';
+import { sanitizeUrl } from '@grafana/data/internal';
 import { DashboardCursorSync } from '@grafana/schema';
 
 import { type AdHocFilterModel } from '../../../internal';
@@ -396,7 +397,7 @@ export const TooltipPlugin2 = ({
             const oneClickLink = dataLinks.find((dataLink) => dataLink.oneClick === true);
 
             if (oneClickLink != null) {
-              window.open(oneClickLink.href, oneClickLink.target ?? '_self');
+              window.open(sanitizeUrl(oneClickLink.href), oneClickLink.target ?? '_self');
             } else {
               setTimeout(() => {
                 _isPinned = true;

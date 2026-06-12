@@ -13,6 +13,7 @@ import {
   type ActionVariableInput,
   ActionType,
 } from '@grafana/data';
+import { sanitizeUrl } from '@grafana/data/internal';
 import { t } from '@grafana/i18n';
 import { config } from '@grafana/runtime';
 import { TooltipDisplayMode } from '@grafana/schema';
@@ -986,7 +987,7 @@ export class ElementState implements LayerElement {
     if (this.oneClickMode === OneClickMode.Link) {
       let primaryDataLink = this.getPrimaryDataLink();
       if (primaryDataLink) {
-        window.open(primaryDataLink.href, primaryDataLink.target ?? '_self');
+        window.open(sanitizeUrl(primaryDataLink.href), primaryDataLink.target ?? '_self');
       }
     } else if (this.oneClickMode === OneClickMode.Action) {
       const primaryAction = this.getPrimaryAction();

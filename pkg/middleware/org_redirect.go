@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/grafana/grafana/pkg/services/contexthandler"
+	"github.com/grafana/grafana/pkg/services/org"
 	"github.com/grafana/grafana/pkg/services/user"
 	"github.com/grafana/grafana/pkg/setting"
 	"github.com/grafana/grafana/pkg/web"
@@ -19,7 +20,7 @@ var redirectDenyRe = regexp.MustCompile(`(//|\.\.)`)
 
 // OrgRedirect changes org and redirects users if the
 // querystring `orgId` doesn't match the active org.
-func OrgRedirect(cfg *setting.Cfg, userSvc user.Service) web.Handler {
+func OrgRedirect(cfg *setting.Cfg, userSvc user.Service, orgSvc ...org.Service) web.Handler {
 	return func(res http.ResponseWriter, req *http.Request, c *web.Context) {
 		orgIdValue := req.URL.Query().Get("orgId")
 		orgId, err := strconv.ParseInt(orgIdValue, 10, 64)
@@ -38,8 +39,24 @@ func OrgRedirect(cfg *setting.Cfg, userSvc user.Service) web.Handler {
 		}
 
 		if !validRedirectPath(c.Req.URL.Path) {
-			// Do not switch orgs or perform the redirect because the new path is not valid
 			return
+		}
+
+		if len(orgSvc) > 0 && orgSvc[0] != nil {
+			orgs, err := orgSvc[0].GetUserOrgList(ctx.Req.Context(), &org.GetUserOrgListQuery{UserID: ctx.UserID})
+			if err != nil {
+				return
+			}
+			isMember := false
+			for _, o := range orgs {
+				if o.OrgID == orgId {
+					isMember = true
+					break
+				}
+			}
+			if !isMember {
+				return
+			}
 		}
 
 		if err := userSvc.Update(ctx.Req.Context(), &user.UpdateUserCommand{UserID: ctx.UserID, OrgID: &orgId}); err != nil {

@@ -1,6 +1,7 @@
 package apikeygen
 
 import (
+	"crypto/subtle"
 	"encoding/base64"
 	"encoding/json"
 
@@ -65,5 +66,5 @@ func IsValid(key *ApiKeyJson, hashedKey string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	return check == hashedKey, nil
+	return subtle.ConstantTimeCompare([]byte(check), []byte(hashedKey)) == 1, nil
 }

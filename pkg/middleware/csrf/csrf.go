@@ -101,7 +101,16 @@ func (c *CSRF) check(r *http.Request) error {
 
 	o := r.Header.Get("Origin")
 
-	// No Origin header sent, skip CSRF check.
+	if o == "" {
+		referer := r.Header.Get("Referer")
+		if referer != "" {
+			refURL, err := url.Parse(referer)
+			if err == nil {
+				o = refURL.Scheme + "://" + refURL.Host
+			}
+		}
+	}
+
 	if o == "" {
 		return nil
 	}
