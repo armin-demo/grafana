@@ -512,6 +512,10 @@ func (hs *HTTPServer) removeOrgUserHelper(ctx context.Context, cmd *org.RemoveOr
 		if err := hs.accesscontrolService.DeleteUserPermissions(ctx, accesscontrol.GlobalOrgID, cmd.UserID); err != nil {
 			hs.log.Warn("failed to delete permissions for user", "userID", cmd.UserID, "orgID", accesscontrol.GlobalOrgID, "err", err)
 		}
+		hs.accesscontrolService.ClearUserPermissionCache(&user.SignedInUser{
+			UserID: cmd.UserID,
+			OrgID:  cmd.OrgID,
+		})
 		return response.Success("User deleted")
 	}
 
@@ -519,6 +523,10 @@ func (hs *HTTPServer) removeOrgUserHelper(ctx context.Context, cmd *org.RemoveOr
 	if err := hs.accesscontrolService.DeleteUserPermissions(ctx, cmd.OrgID, cmd.UserID); err != nil {
 		hs.log.Warn("failed to delete permissions for user", "userID", cmd.UserID, "orgID", cmd.OrgID, "err", err)
 	}
+	hs.accesscontrolService.ClearUserPermissionCache(&user.SignedInUser{
+		UserID: cmd.UserID,
+		OrgID:  cmd.OrgID,
+	})
 
 	return response.Success("User removed from organization")
 }

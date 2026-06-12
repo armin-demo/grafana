@@ -335,7 +335,7 @@ func (hs *HTTPServer) UpdateUserEmail(c *contextmodel.ReqContext) response.Respo
 		return hs.RedirectResponseWithError(c, errors.New("bad request data"))
 	}
 
-	if err := hs.userVerifier.Complete(c.Req.Context(), user.CompleteEmailVerifyCommand{Code: code}); err != nil {
+	if err := hs.userVerifier.Complete(c.Req.Context(), user.CompleteEmailVerifyCommand{User: c.SignedInUser, Code: code}); err != nil {
 		return hs.RedirectResponseWithError(c, err)
 	}
 
@@ -568,6 +568,11 @@ func (hs *HTTPServer) ChangeUserPassword(c *contextmodel.ReqContext) response.Re
 
 	if err := hs.userService.Update(c.Req.Context(), &user.UpdateUserCommand{UserID: userID, Password: &form.NewPassword, OldPassword: &form.OldPassword}); err != nil {
 		return response.ErrOrFallback(http.StatusInternalServerError, "Failed to change user password", err)
+	}
+
+	if err := hs.AuthTokenService.RevokeAllUserTokens(c.Req.Context(), userID); err != nil {
+		return response.Error(http.StatusExpectationFailed,
+			"User password changed but unable to revoke user sessions", err)
 	}
 
 	return response.Success("User password changed")
