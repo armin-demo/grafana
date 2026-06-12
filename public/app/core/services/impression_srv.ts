@@ -9,6 +9,8 @@ export class ImpressionSrv {
   constructor() {}
 
   addDashboardImpression(dashboardUID: string) {
+    this.updateLatestViewedDashboard(dashboardUID);
+
     const impressionsKey = this.impressionKey();
     let impressions: string[] = [];
     if (store.exists(impressionsKey)) {
@@ -28,6 +30,16 @@ export class ImpressionSrv {
       impressions.pop();
     }
     store.set(impressionsKey, JSON.stringify(impressions));
+  }
+
+  private updateLatestViewedDashboard(dashboardUID: string) {
+    if (!dashboardUID) {
+      return;
+    }
+
+    getBackendSrv()
+      .post(`/api/dashboards/uid/${encodeURIComponent(dashboardUID)}/latest-viewed`, {})
+      .catch(() => {});
   }
 
   private async convertToUIDs() {

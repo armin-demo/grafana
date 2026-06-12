@@ -6,14 +6,19 @@ import { type GrafanaTheme2, PluginExtensionPoints } from '@grafana/data';
 import { t } from '@grafana/i18n';
 import { usePluginComponents } from '@grafana/runtime';
 import { Box, ScrollContainer, Tab, TabContent, TabsBar, useStyles2 } from '@grafana/ui';
-import { getRecentlyViewedDashboards } from 'app/features/browse-dashboards/api/recentlyViewed';
+import {
+  getLatestViewedDashboard,
+  getRecentlyViewedDashboards,
+} from 'app/features/browse-dashboards/api/recentlyViewed';
 import { useDashboardLocationInfo } from 'app/features/search/hooks/useDashboardLocationInfo';
 import { getGrafanaSearcher } from 'app/features/search/service/searcher';
 
+import { LatestViewedDashboardTab } from './LatestViewedDashboardTab';
 import { RecentDashboardsTab } from './RecentDashboardsTab';
 import { StarredDashboardsTab } from './StarredDashboardsTab';
 import { type HomepageTab } from './types';
 
+const LATEST_TAB_ID = 'latest';
 const RECENT_TAB_ID = 'recent';
 const STARRED_TAB_ID = 'starred';
 const MAX_RECENT = 20;
@@ -25,8 +30,15 @@ interface HomepageTabExtensionProps {
 
 export function DashboardTabs() {
   const styles = useStyles2(getStyles);
-  const [activeTab, setActiveTab] = useState(RECENT_TAB_ID);
+  const [activeTab, setActiveTab] = useState(LATEST_TAB_ID);
   const [extensionTabs, setExtensionTabs] = useState<HomepageTab[]>([]);
+
+  const {
+    value: latestDashboard,
+    loading: latestLoading,
+    error: latestError,
+    retry: latestRetry,
+  } = useAsyncRetry(() => getLatestViewedDashboard(), []);
 
   const {
     value: recentDashboards,
@@ -46,7 +58,7 @@ export function DashboardTabs() {
   }, []);
 
   const { foldersByUid } = useDashboardLocationInfo(
-    (recentDashboards?.length ?? 0) > 0 || (starredDashboards?.length ?? 0) > 0
+    Boolean(latestDashboard) || (recentDashboards?.length ?? 0) > 0 || (starredDashboards?.length ?? 0) > 0
   );
 
   const { components: extensionComponents } = usePluginComponents<HomepageTabExtensionProps>({
@@ -65,22 +77,35 @@ export function DashboardTabs() {
   // Auto-switch to the non-empty tab when initial data finishes loading
   const didAutoSwitch = useRef(false);
   useEffect(() => {
-    if (didAutoSwitch.current || recentLoading || starredLoading) {
+    if (didAutoSwitch.current || latestLoading || recentLoading || starredLoading) {
       return;
     }
     didAutoSwitch.current = true;
 
+    const latestEmpty = !latestDashboard;
     const recentEmpty = !recentDashboards?.length;
     const starredEmpty = !starredDashboards?.length;
 
-    if (activeTab === RECENT_TAB_ID && recentEmpty && !starredEmpty) {
+    if (activeTab === LATEST_TAB_ID && latestEmpty && !recentEmpty) {
+      setActiveTab(RECENT_TAB_ID);
+    } else if (activeTab === LATEST_TAB_ID && latestEmpty && recentEmpty && !starredEmpty) {
       setActiveTab(STARRED_TAB_ID);
+    } else if (activeTab === RECENT_TAB_ID && recentEmpty && !starredEmpty) {
+      setActiveTab(STARRED_TAB_ID);
+    } else if (activeTab === STARRED_TAB_ID && starredEmpty && !latestEmpty) {
+      setActiveTab(LATEST_TAB_ID);
     } else if (activeTab === STARRED_TAB_ID && starredEmpty && !recentEmpty) {
       setActiveTab(RECENT_TAB_ID);
     }
-  }, [recentLoading, starredLoading, recentDashboards, starredDashboards, activeTab]);
+  }, [latestLoading, recentLoading, starredLoading, latestDashboard, recentDashboards, starredDashboards, activeTab]);
 
   const builtInTabs: HomepageTab[] = [
+    {
+      id: LATEST_TAB_ID,
+      label: t('home.dashboard-tabs.latest', 'Latest'),
+      activeLabel: t('home.dashboard-tabs.latest-active', 'Latest viewed dashboard'),
+      counter: latestDashboard ? 1 : undefined,
+    },
     {
       id: RECENT_TAB_ID,
       label: t('home.dashboard-tabs.recent', 'Recent'),
@@ -120,6 +145,15 @@ export function DashboardTabs() {
       </TabsBar>
       <TabContent className={styles.tabContent}>
         <ScrollContainer showScrollIndicators maxHeight="256px" minHeight="256px">
+          {activeTab === LATEST_TAB_ID && (
+            <LatestViewedDashboardTab
+              dashboard={latestDashboard}
+              loading={latestLoading}
+              error={latestError}
+              retry={latestRetry}
+              foldersByUid={foldersByUid}
+            />
+          )}
           {activeTab === RECENT_TAB_ID && (
             <RecentDashboardsTab
               dashboards={recentDashboards ?? []}

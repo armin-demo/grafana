@@ -23,8 +23,20 @@ jest.mock('app/core/services/context_srv', () => {
 });
 
 describe('ImpressionSrv', () => {
+  const postMock = jest.fn().mockResolvedValue(undefined);
+
   beforeEach(() => {
     window.localStorage.removeItem(impressionSrv.impressionKey());
+    jest.clearAllMocks();
+    mockBackendSrv.mockImplementation(() => ({ get: jest.fn(), post: postMock }));
+  });
+
+  describe('addDashboardImpression', () => {
+    it('updates the backend latest viewed dashboard', () => {
+      impressionSrv.addDashboardImpression('dashboard-uid');
+
+      expect(postMock).toHaveBeenCalledWith('/api/dashboards/uid/dashboard-uid/latest-viewed', {});
+    });
   });
 
   describe('getDashboardOpened', () => {

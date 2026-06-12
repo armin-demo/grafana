@@ -22,6 +22,7 @@ import (
 	"github.com/grafana/grafana/pkg/components/simplejson"
 	"github.com/grafana/grafana/pkg/infra/db"
 	"github.com/grafana/grafana/pkg/infra/db/dbtest"
+	"github.com/grafana/grafana/pkg/infra/kvstore"
 	"github.com/grafana/grafana/pkg/infra/localcache"
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/infra/tracing"
@@ -378,6 +379,68 @@ func TestHTTPServer_GetDashboard_AccessControl(t *testing.T) {
 		assert.Equal(t, data.Meta.CanAdmin, true)
 
 		require.NoError(t, res.Body.Close())
+	})
+}
+
+func TestHTTPServer_LatestViewedDashboard(t *testing.T) {
+	kv := kvstore.NewFakeKVStore()
+	latestDashboardUID := "latest-dashboard"
+	dashboardReadPermission := accesscontrol.Permission{
+		Action: dashboards.ActionDashboardsRead,
+		Scope:  dashboards.ScopeDashboardsProvider.GetResourceScopeUID(latestDashboardUID),
+	}
+	userWithDashboardAccess := authedUserWithPermissions(1, 1, []accesscontrol.Permission{dashboardReadPermission})
+	userWithoutDashboardAccess := &user.SignedInUser{
+		UserID:      1,
+		OrgID:       1,
+		OrgRole:     org.RoleNone,
+		Permissions: map[int64]map[string][]string{1: {}},
+	}
+
+	server := SetupAPITestServer(t, func(hs *HTTPServer) {
+		hs.kvStore = kv
+	})
+
+	t.Run("returns empty latest viewed dashboard before any dashboard is viewed", func(t *testing.T) {
+		res, err := server.Send(webtest.RequestWithSignedInUser(server.NewGetRequest("/api/dashboards/latest-viewed"), userWithDashboardAccess))
+		require.NoError(t, err)
+		defer func() { require.NoError(t, res.Body.Close()) }()
+
+		require.Equal(t, http.StatusOK, res.StatusCode)
+
+		var dto latestViewedDashboardDTO
+		require.NoError(t, json.NewDecoder(res.Body).Decode(&dto))
+		require.Empty(t, dto.UID)
+	})
+
+	t.Run("updates and returns latest viewed dashboard for the signed in user", func(t *testing.T) {
+		res, err := server.Send(webtest.RequestWithSignedInUser(server.NewPostRequest("/api/dashboards/uid/"+latestDashboardUID+"/latest-viewed", nil), userWithDashboardAccess))
+		require.NoError(t, err)
+		defer func() { require.NoError(t, res.Body.Close()) }()
+
+		require.Equal(t, http.StatusNoContent, res.StatusCode)
+
+		res, err = server.Send(webtest.RequestWithSignedInUser(server.NewGetRequest("/api/dashboards/latest-viewed"), userWithDashboardAccess))
+		require.NoError(t, err)
+		defer func() { require.NoError(t, res.Body.Close()) }()
+
+		require.Equal(t, http.StatusOK, res.StatusCode)
+
+		var dto latestViewedDashboardDTO
+		require.NoError(t, json.NewDecoder(res.Body).Decode(&dto))
+		require.Equal(t, latestDashboardUID, dto.UID)
+	})
+
+	t.Run("does not return latest viewed dashboard when read access is removed", func(t *testing.T) {
+		res, err := server.Send(webtest.RequestWithSignedInUser(server.NewGetRequest("/api/dashboards/latest-viewed"), userWithoutDashboardAccess))
+		require.NoError(t, err)
+		defer func() { require.NoError(t, res.Body.Close()) }()
+
+		require.Equal(t, http.StatusOK, res.StatusCode)
+
+		var dto latestViewedDashboardDTO
+		require.NoError(t, json.NewDecoder(res.Body).Decode(&dto))
+		require.Empty(t, dto.UID)
 	})
 }
 

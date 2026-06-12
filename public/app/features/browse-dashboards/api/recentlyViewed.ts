@@ -1,6 +1,26 @@
+import { getBackendSrv } from '@grafana/runtime';
 import impressionSrv from 'app/core/services/impression_srv';
 import { getGrafanaSearcher } from 'app/features/search/service/searcher';
 import { type DashboardQueryResult } from 'app/features/search/service/types';
+
+interface LatestViewedDashboardDTO {
+  uid?: string;
+}
+
+export async function getLatestViewedDashboard(): Promise<DashboardQueryResult | undefined> {
+  const latestViewed = await getBackendSrv().get<LatestViewedDashboardDTO>('/api/dashboards/latest-viewed');
+  if (!latestViewed.uid) {
+    return undefined;
+  }
+
+  const searchResults = await getGrafanaSearcher().search({
+    kind: ['dashboard'],
+    limit: 1,
+    uid: [latestViewed.uid],
+  });
+
+  return searchResults.view.toArray()[0];
+}
 
 /**
  * Returns dashboard search results ordered the same way the user opened them.

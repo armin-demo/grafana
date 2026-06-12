@@ -42,8 +42,13 @@ import (
 )
 
 const (
-	anonString = "Anonymous"
+	anonString                     = "Anonymous"
+	latestViewedDashboardNamespace = "dashboard.latestViewed"
 )
+
+type latestViewedDashboardDTO struct {
+	UID string `json:"uid"`
+}
 
 // swagger:route GET /dashboards/uid/{uid} dashboards getDashboardByUID
 //
@@ -295,6 +300,45 @@ func (hs *HTTPServer) getDashboardHelper(ctx context.Context, orgID int64, uid s
 	}
 
 	return queryResult, nil
+}
+
+func latestViewedDashboardKey(userID int64) string {
+	return fmt.Sprintf("user:%d", userID)
+}
+
+func (hs *HTTPServer) GetLatestViewedDashboard(c *contextmodel.ReqContext) response.Response {
+	uid, found, err := hs.kvStore.Get(c.Req.Context(), c.GetOrgID(), latestViewedDashboardNamespace, latestViewedDashboardKey(c.SignedInUser.UserID))
+	if err != nil {
+		return response.Error(http.StatusInternalServerError, "Failed to get latest viewed dashboard", err)
+	}
+	if !found || uid == "" {
+		return response.JSON(http.StatusOK, latestViewedDashboardDTO{})
+	}
+
+	evaluator := accesscontrol.EvalPermission(dashboards.ActionDashboardsRead, dashboards.ScopeDashboardsProvider.GetResourceScopeUID(uid))
+	canRead, err := hs.AccessControl.Evaluate(c.Req.Context(), c.SignedInUser, evaluator)
+	if err != nil {
+		return response.Error(http.StatusInternalServerError, "Failed to evaluate dashboard permissions", err)
+	}
+	if !canRead {
+		return response.JSON(http.StatusOK, latestViewedDashboardDTO{})
+	}
+
+	return response.JSON(http.StatusOK, latestViewedDashboardDTO{UID: uid})
+}
+
+func (hs *HTTPServer) UpdateLatestViewedDashboard(c *contextmodel.ReqContext) response.Response {
+	uid := strings.TrimSpace(web.Params(c.Req)[":uid"])
+	if uid == "" {
+		return response.Error(http.StatusBadRequest, "Dashboard UID is required", nil)
+	}
+
+	err := hs.kvStore.Set(c.Req.Context(), c.GetOrgID(), latestViewedDashboardNamespace, latestViewedDashboardKey(c.SignedInUser.UserID), uid)
+	if err != nil {
+		return response.Error(http.StatusInternalServerError, "Failed to update latest viewed dashboard", err)
+	}
+
+	return response.Empty(http.StatusNoContent)
 }
 
 // swagger:route DELETE /dashboards/uid/{uid} dashboards deleteDashboardByUID

@@ -28,6 +28,8 @@ const recentHits: DashboardHit[] = [
   makeDashboardHit({ name: 'recent-2', title: 'Recent Dashboard 2' }),
 ];
 
+const latestHit = makeDashboardHit({ name: 'latest-1', title: 'Latest Dashboard 1' });
+
 const starredHits: DashboardHit[] = [
   makeDashboardHit({ name: 'starred-1', title: 'Starred Dashboard 1' }),
   makeDashboardHit({ name: 'starred-2', title: 'Starred Dashboard 2' }),
@@ -42,18 +44,38 @@ function seedStars(uids: string[]) {
   server.use(http.get('/api/user/stars', () => HttpResponse.json(uids)));
 }
 
+function seedLatest(uid?: string) {
+  server.use(http.get('/api/dashboards/latest-viewed', () => HttpResponse.json({ uid })));
+}
+
 beforeEach(() => {
   setPluginComponentsHook(() => ({ components: [], isLoading: false }));
   window.localStorage.removeItem(impressionKey);
   seedStars([]);
+  seedLatest();
 });
 
 describe('DashboardTabs', () => {
-  it('renders Recent tab as active by default and shows recent dashboards', async () => {
-    seedRecent(['recent-1', 'recent-2']);
-    server.use(getCustomSearchHandler([...recentHits, ...starredHits]));
+  it('renders Latest tab as active by default and shows the latest viewed dashboard', async () => {
+    seedLatest('latest-1');
+    server.use(getCustomSearchHandler([latestHit, ...recentHits, ...starredHits]));
 
     render(<DashboardTabs />);
+
+    expect(screen.getByRole('tab', { name: /latest/i })).toHaveAttribute('aria-selected', 'true');
+
+    await waitFor(() => {
+      expect(screen.getByText('Latest Dashboard 1')).toBeInTheDocument();
+    });
+  });
+
+  it('switches to Recent tab and shows recent dashboards', async () => {
+    seedRecent(['recent-1', 'recent-2']);
+    server.use(getCustomSearchHandler([latestHit, ...recentHits, ...starredHits]));
+
+    const { user } = render(<DashboardTabs />);
+
+    await user.click(screen.getByRole('tab', { name: /recent/i }));
 
     expect(screen.getByRole('tab', { name: /recent/i })).toHaveAttribute('aria-selected', 'true');
 
@@ -81,7 +103,9 @@ describe('DashboardTabs', () => {
   });
 
   it('shows empty state when no recent dashboards', async () => {
-    render(<DashboardTabs />);
+    const { user } = render(<DashboardTabs />);
+
+    await user.click(screen.getByRole('tab', { name: /recent/i }));
 
     await waitFor(() => {
       expect(screen.getByText("Dashboards you've recently viewed will appear here.")).toBeInTheDocument();
@@ -100,11 +124,17 @@ describe('DashboardTabs', () => {
   });
 
   it('shows counter badges with correct counts', async () => {
+    seedLatest('latest-1');
     seedRecent(['recent-1', 'recent-2']);
     seedStars(['starred-1', 'starred-2', 'starred-3']);
-    server.use(getCustomSearchHandler([...recentHits, ...starredHits]));
+    server.use(getCustomSearchHandler([latestHit, ...recentHits, ...starredHits]));
 
     render(<DashboardTabs />);
+
+    await waitFor(() => {
+      const latestTab = screen.getByRole('tab', { name: /latest/i });
+      expect(latestTab).toHaveTextContent('1');
+    });
 
     await waitFor(() => {
       const recentTab = screen.getByRole('tab', { name: /recent/i });
