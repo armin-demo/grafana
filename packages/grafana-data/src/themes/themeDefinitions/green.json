@@ -1,0 +1,37 @@
+{
+  "name": "Green",
+  "id": "green",
+  "colors": {
+    "mode": "dark",
+    "background": {
+      "canvas": "#0a140d",
+      "primary": "#10211a",
+      "secondary": "#163028",
+      "elevated": "#163028"
+    },
+    "text": {
+      "primary": "#d4f5dc",
+      "secondary": "rgba(180, 220, 190, 0.75)",
+      "disabled": "rgba(140, 180, 150, 0.55)",
+      "link": "#3ddc84",
+      "maxContrast": "#eaffea"
+    },
+    "border": {
+      "weak": "rgba(61, 220, 132, 0.12)",
+      "medium": "rgba(61, 220, 132, 0.22)",
+      "strong": "rgba(61, 220, 132, 0.35)"
+    },
+    "primary": {
+      "main": "#2e9b4f",
+      "text": "#5fd07f",
+      "border": "#5fd07f"
+    },
+    "secondary": {
+      "text": "#5fd07f"
+    },
+    "gradients": {
+      "brandVertical": "linear-gradient(0deg, #2e9b4f 0%, #3ddc84 100%)",
+      "brandHorizontal": "linear-gradient(90deg, #2e9b4f 0%, #3ddc84 100%)"
+    }
+  }
+}
