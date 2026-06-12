@@ -570,6 +570,11 @@ func (hs *HTTPServer) ChangeUserPassword(c *contextmodel.ReqContext) response.Re
 		return response.ErrOrFallback(http.StatusInternalServerError, "Failed to change user password", err)
 	}
 
+	if err := hs.AuthTokenService.RevokeAllUserTokens(c.Req.Context(), userID); err != nil {
+		return response.Error(http.StatusExpectationFailed,
+			"User password changed but unable to revoke user sessions", err)
+	}
+
 	return response.Success("User password changed")
 }
 
