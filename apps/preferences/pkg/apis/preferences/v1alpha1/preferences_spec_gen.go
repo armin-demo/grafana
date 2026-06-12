@@ -36,6 +36,23 @@ func (PreferencesNavbarPreference) OpenAPIModelName() string {
 }
 
 // +k8s:openapi-gen=true
+type PreferencesDashboardHistoryPreference struct {
+	RecentDashboardUIDs []string `json:"recentDashboardUIDs"`
+}
+
+// NewPreferencesDashboardHistoryPreference creates a new PreferencesDashboardHistoryPreference object.
+func NewPreferencesDashboardHistoryPreference() *PreferencesDashboardHistoryPreference {
+	return &PreferencesDashboardHistoryPreference{
+		RecentDashboardUIDs: []string{},
+	}
+}
+
+// OpenAPIModelName returns the OpenAPI model name for PreferencesDashboardHistoryPreference.
+func (PreferencesDashboardHistoryPreference) OpenAPIModelName() string {
+	return "com.github.grafana.grafana.apps.preferences.pkg.apis.preferences.v1alpha1.PreferencesDashboardHistoryPreference"
+}
+
+// +k8s:openapi-gen=true
 type PreferencesSpec struct {
 	// UID for the home dashboard
 	HomeDashboardUID *string `json:"homeDashboardUID,omitempty"`
@@ -51,6 +68,8 @@ type PreferencesSpec struct {
 	QueryHistory *PreferencesQueryHistoryPreference `json:"queryHistory,omitempty"`
 	// Navigation preferences
 	Navbar *PreferencesNavbarPreference `json:"navbar,omitempty"`
+	// Dashboard view history preferences
+	DashboardHistory *PreferencesDashboardHistoryPreference `json:"dashboardHistory,omitempty"`
 }
 
 // NewPreferencesSpec creates a new PreferencesSpec object.

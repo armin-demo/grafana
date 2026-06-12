@@ -33,6 +33,9 @@ preferencesV1alpha1: {
 
 			// Navigation preferences
 			navbar?: #NavbarPreference
+
+			// Dashboard view history preferences
+			dashboardHistory?: #DashboardHistoryPreference
 		}
 
 		#QueryHistoryPreference: {
@@ -42,6 +45,10 @@ preferencesV1alpha1: {
 
 		#NavbarPreference: {
 			bookmarkUrls: [...string]
+		}
+
+		#DashboardHistoryPreference: {
+			recentDashboardUIDs: [...string]
 		}
 	}
 }

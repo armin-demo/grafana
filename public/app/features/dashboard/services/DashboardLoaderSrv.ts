@@ -134,6 +134,7 @@ export class DashboardLoaderSrv extends DashboardLoaderSrvBase<DashboardDTO> {
       if (!params) {
         const cachedDashboard = stateManager.getDashboardFromCache(uid);
         if (cachedDashboard) {
+          impressionSrv.addDashboardImpression(uid);
           return Promise.resolve(cachedDashboard);
         }
       }
@@ -199,6 +200,7 @@ export class DashboardLoaderSrvV2 extends DashboardLoaderSrvBase<DashboardWithAc
       if (!params) {
         const cachedDashboard = stateManager.getDashboardFromCache(uid);
         if (cachedDashboard) {
+          impressionSrv.addDashboardImpression(uid);
           return Promise.resolve(cachedDashboard);
         }
       }

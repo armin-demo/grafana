@@ -29,6 +29,9 @@ export type UpdateUserPreferencesApiArg = {
 export type PreferencesNavbarPreference = {
   bookmarkUrls?: string[];
 };
+export type PreferencesDashboardHistoryPreference = {
+  recentDashboardUIDs?: string[];
+};
 export type PreferencesQueryHistoryPreference = {
   /** one of: '' | 'query' | 'starred'; */
   homeTab?: string;
@@ -38,6 +41,7 @@ export type PreferencesSpec = {
   homeDashboardUID?: string;
   /** Selected language */
   language?: string;
+  dashboardHistory?: PreferencesDashboardHistoryPreference;
   navbar?: PreferencesNavbarPreference;
   queryHistory?: PreferencesQueryHistoryPreference;
   /** user interface theme */
@@ -63,6 +67,9 @@ export type SuccessResponseBody = {
 export type NavbarPreference = {
   bookmarkUrls?: string[];
 };
+export type DashboardHistoryPreference = {
+  recentDashboardUIDs?: string[];
+};
 export type QueryHistoryPreference = {
   homeTab?: string;
 };
@@ -71,6 +78,7 @@ export type PatchPrefsCmd = {
   homeDashboardId?: number;
   homeDashboardUID?: string;
   language?: string;
+  dashboardHistory?: DashboardHistoryPreference;
   navbar?: NavbarPreference;
   queryHistory?: QueryHistoryPreference;
   theme?: 'light' | 'dark';
@@ -83,6 +91,7 @@ export type UpdatePrefsCmd = {
   homeDashboardId?: number;
   homeDashboardUID?: string;
   language?: string;
+  dashboardHistory?: DashboardHistoryPreference;
   navbar?: NavbarPreference;
   queryHistory?: QueryHistoryPreference;
   theme?: 'light' | 'dark' | 'system';

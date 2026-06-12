@@ -35,6 +35,7 @@ const getPreferencesHandler = () =>
       },
       language: '',
       navbar: { bookmarkUrls: [] },
+      dashboardHistory: { recentDashboardUIDs: [] },
     });
   });
 

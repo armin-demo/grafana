@@ -363,6 +363,9 @@ export type ObjectMeta = {
 export type PreferencesNavbarPreference = {
   bookmarkUrls: string[];
 };
+export type PreferencesDashboardHistoryPreference = {
+  recentDashboardUIDs: string[];
+};
 export type PreferencesQueryHistoryPreference = {
   /** one of: '' | 'query' | 'starred'; */
   homeTab?: string;
@@ -372,6 +375,8 @@ export type PreferencesSpec = {
   homeDashboardUID?: string;
   /** Selected language */
   language?: string;
+  /** Dashboard view history preferences */
+  dashboardHistory?: PreferencesDashboardHistoryPreference;
   /** Navigation preferences */
   navbar?: PreferencesNavbarPreference;
   /** Explore query history preferences */

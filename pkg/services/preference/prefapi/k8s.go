@@ -125,6 +125,11 @@ func updateCmdToSpec(dto *dtos.UpdatePrefsCmd, homeDashboardUID *string) *prefer
 			BookmarkUrls: dto.Navbar.BookmarkUrls,
 		}
 	}
+	if dto.DashboardHistory != nil {
+		spec.DashboardHistory = &preferences.PreferencesDashboardHistoryPreference{
+			RecentDashboardUIDs: dto.DashboardHistory.RecentDashboardUIDs,
+		}
+	}
 	return spec
 }
 
@@ -147,6 +152,11 @@ func patchCmdToSpec(dto *dtos.PatchPrefsCmd, homeDashboardUID *string) *preferen
 	if dto.Navbar != nil {
 		spec.Navbar = &preferences.PreferencesNavbarPreference{
 			BookmarkUrls: dto.Navbar.BookmarkUrls,
+		}
+	}
+	if dto.DashboardHistory != nil {
+		spec.DashboardHistory = &preferences.PreferencesDashboardHistoryPreference{
+			RecentDashboardUIDs: dto.DashboardHistory.RecentDashboardUIDs,
 		}
 	}
 	return spec

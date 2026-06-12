@@ -53,8 +53,9 @@ type SavePreferenceCommand struct {
 	WeekStart        string                  `json:"weekStart,omitempty"`
 	Theme            string                  `json:"theme,omitempty"`
 	Language         string                  `json:"language,omitempty"`
-	QueryHistory     *QueryHistoryPreference `json:"queryHistory,omitempty"`
-	Navbar           *NavbarPreference       `json:"navbar,omitempty"`
+	QueryHistory     *QueryHistoryPreference     `json:"queryHistory,omitempty"`
+	Navbar           *NavbarPreference           `json:"navbar,omitempty"`
+	DashboardHistory *DashboardHistoryPreference `json:"dashboardHistory,omitempty"`
 }
 
 // One (and only one) of the values must be non-zero
@@ -75,14 +76,16 @@ type PatchPreferenceCommand struct {
 	WeekStart        *string                 `json:"weekStart,omitempty"`
 	Theme            *string                 `json:"theme,omitempty"`
 	Language         *string                 `json:"language,omitempty"`
-	QueryHistory     *QueryHistoryPreference `json:"queryHistory,omitempty"`
-	Navbar           *NavbarPreference       `json:"navbar,omitempty"`
+	QueryHistory     *QueryHistoryPreference     `json:"queryHistory,omitempty"`
+	Navbar           *NavbarPreference           `json:"navbar,omitempty"`
+	DashboardHistory *DashboardHistoryPreference `json:"dashboardHistory,omitempty"`
 }
 
 type PreferenceJSONData struct {
-	Language     string                 `json:"language"`
-	QueryHistory QueryHistoryPreference `json:"queryHistory"`
-	Navbar       NavbarPreference       `json:"navbar"`
+	Language         string                      `json:"language"`
+	QueryHistory     QueryHistoryPreference      `json:"queryHistory"`
+	Navbar           NavbarPreference            `json:"navbar"`
+	DashboardHistory DashboardHistoryPreference  `json:"dashboardHistory"`
 }
 
 type QueryHistoryPreference struct {
@@ -91,6 +94,10 @@ type QueryHistoryPreference struct {
 
 type NavbarPreference struct {
 	BookmarkUrls []string `json:"bookmarkUrls"`
+}
+
+type DashboardHistoryPreference struct {
+	RecentDashboardUIDs []string `json:"recentDashboardUIDs"`
 }
 
 func (j *PreferenceJSONData) FromDB(data []byte) error {

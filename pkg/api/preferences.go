@@ -150,6 +150,7 @@ func (hs *HTTPServer) patchPreferencesFor(ctx context.Context, orgID, userID, te
 		Language:         dtoCmd.Language,
 		QueryHistory:     dtoCmd.QueryHistory,
 		Navbar:           dtoCmd.Navbar,
+		DashboardHistory: dtoCmd.DashboardHistory,
 	}
 
 	if err := hs.preferenceService.Patch(ctx, &patchCmd); err != nil {
