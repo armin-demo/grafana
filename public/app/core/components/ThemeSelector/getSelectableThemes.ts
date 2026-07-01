@@ -2,7 +2,7 @@ import { getBuiltInThemes } from '@grafana/data';
 import { config } from '@grafana/runtime';
 
 export function getSelectableThemes() {
-  const allowedExtraThemes = [];
+  const allowedExtraThemes = ['evergreen'];
 
   if (config.featureToggles.colorblindThemes) {
     allowedExtraThemes.push('deut_prot_dark');
