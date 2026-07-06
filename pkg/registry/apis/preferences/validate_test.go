@@ -62,6 +62,12 @@ func TestAPIBuilder_Validate(t *testing.T) {
 			resource: prefsGVR,
 		},
 		{
+			name:     "valid create with evergreen theme",
+			obj:      newPrefs(new("evergreen"), nil),
+			op:       admission.Create,
+			resource: prefsGVR,
+		},
+		{
 			name:       "invalid theme on create",
 			obj:        newPrefs(new("not-a-real-theme"), nil),
 			op:         admission.Create,
