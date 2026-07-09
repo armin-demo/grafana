@@ -5509,15 +5509,18 @@
     {
       "metadata": {
         "name": "recentlyViewedDashboards",
-        "resourceVersion": "1771434338561",
-        "creationTimestamp": "2025-12-10T16:28:19Z"
+        "resourceVersion": "1783600778146",
+        "creationTimestamp": "2025-12-10T16:28:19Z",
+        "annotations": {
+          "grafana.app/updatedTimestamp": "2026-07-09 12:39:38.146474521 +0000 UTC"
+        }
       },
       "spec": {
         "description": "Enables recently viewed dashboards section in the browsing dashboard page",
-        "stage": "experimental",
+        "stage": "GA",
         "codeowner": "@grafana/grafana-frontend-navigation",
         "frontend": true,
-        "expression": "false"
+        "expression": "true"
       }
     },
     {
