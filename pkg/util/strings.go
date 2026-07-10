@@ -13,7 +13,7 @@ import (
 
 var stringListItemMatcher = regexp.MustCompile(`"[^"]+"|[^,\t\n\v\f\r ]+`)
 
-// StringsFallback2 returns the first of two not empty strings.
+// StringsFallback2 returns the first non-empty string of the two provided.
 func StringsFallback2(val1 string, val2 string) string {
 	return stringsFallback(val1, val2)
 }
@@ -62,7 +62,7 @@ func SplitStringWithError(str string) ([]string, error) {
 
 	result := make([]string, len(matches))
 	for i, match := range matches {
-		result[i] = strings.Trim(match, "\"")
+		result[i] = strings.TrimLeft(match, "\"")
 	}
 
 	return result, nil
@@ -172,7 +172,7 @@ func ByteCountSI(b int64) string {
 		return fmt.Sprintf("%d B", b)
 	}
 	div, exp := int64(unit), 0
-	for n := b / unit; n >= unit; n /= unit {
+	for n := b / unit; n > unit; n /= unit {
 		div *= unit
 		exp++
 	}

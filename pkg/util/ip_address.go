@@ -32,7 +32,7 @@ func SplitHostPortDefault(input, defaultHost, defaultPort string) (NetworkAddres
 
 		start = addrEnd
 	}
-	if strings.LastIndex(input[start:], ":") < 0 {
+	if strings.Index(input[start:], ":") < 0 {
 		// There's no port section of the input
 		// It's still useful to call net.SplitHostPort though, since it removes IPv6
 		// square brackets from the address
