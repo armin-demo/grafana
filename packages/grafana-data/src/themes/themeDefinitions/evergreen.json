@@ -1,0 +1,85 @@
+{
+  "name": "Evergreen",
+  "id": "evergreen",
+  "colors": {
+    "mode": "dark",
+    "border": {
+      "weak": "rgba(160, 200, 170, 0.12)",
+      "medium": "rgba(160, 200, 170, 0.20)",
+      "strong": "rgba(160, 200, 170, 0.30)"
+    },
+    "text": {
+      "primary": "#E8F2EB",
+      "secondary": "rgba(168, 200, 178, 0.85)",
+      "disabled": "rgba(168, 200, 178, 0.55)",
+      "link": "#6EE7A8",
+      "maxContrast": "#FFFFFF"
+    },
+    "primary": {
+      "main": "#3DCF7A",
+      "text": "#6EE7A8",
+      "border": "#6EE7A8",
+      "name": "primary",
+      "shade": "#52D98A",
+      "transparent": "#3DCF7A26",
+      "contrastText": "#0B140F",
+      "borderTransparent": "#6EE7A840"
+    },
+    "secondary": {
+      "main": "rgba(160, 200, 170, 0.10)",
+      "shade": "rgba(160, 200, 170, 0.14)",
+      "transparent": "rgba(160, 200, 170, 0.08)",
+      "text": "rgb(168, 200, 178)",
+      "contrastText": "rgb(168, 200, 178)",
+      "border": "rgba(160, 200, 170, 0.08)",
+      "name": "secondary",
+      "borderTransparent": "rgba(160, 200, 170, 0.25)"
+    },
+    "accent": {
+      "main": "#3DCF7A",
+      "text": "#6EE7A8",
+      "border": "#6EE7A8",
+      "name": "accent",
+      "shade": "#52D98A",
+      "transparent": "#3DCF7A26",
+      "contrastText": "#0B140F",
+      "borderTransparent": "#6EE7A840"
+    },
+    "info": {
+      "main": "#4BA3C7"
+    },
+    "success": {
+      "main": "#3DCF7A"
+    },
+    "warning": {
+      "main": "#E8B84A"
+    },
+    "error": {
+      "main": "#E05A5A"
+    },
+    "background": {
+      "canvas": "#0B140F",
+      "page": "#101A14",
+      "primary": "#152019",
+      "secondary": "#1E2E24",
+      "elevated": "#1E2E24"
+    },
+    "action": {
+      "hover": "rgba(160, 200, 170, 0.14)",
+      "selected": "rgba(160, 200, 170, 0.12)",
+      "selectedBorder": "#3DCF7A",
+      "focus": "rgba(160, 200, 170, 0.16)",
+      "hoverOpacity": 0.08,
+      "disabledText": "rgba(168, 200, 178, 0.55)",
+      "disabledBackground": "rgba(160, 200, 170, 0.04)",
+      "disabledOpacity": 0.38
+    },
+    "gradients": {
+      "brandHorizontal": "linear-gradient(270deg, #3DCF7A 0%, #6EE7A8 100%)",
+      "brandVertical": "linear-gradient(0.01deg, #3DCF7A 0.01%, #6EE7A8 99.99%)"
+    },
+    "contrastThreshold": 3,
+    "hoverFactor": 0.03,
+    "tonalOffset": 0.15
+  }
+}
