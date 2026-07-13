@@ -50,6 +50,9 @@ var node *snowflake.Node
 // it is guaranteed to have a character as the first letter
 // This UID will be a valid k8s name
 func GenerateShortUID() string {
+	mtx.Lock()
+	defer mtx.Unlock()
+
 	if node == nil {
 		// ignoring the error happens when input outside 0-1023
 		node, _ = snowflake.NewNode(rand.Int63n(1024))

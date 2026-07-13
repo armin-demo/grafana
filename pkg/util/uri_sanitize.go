@@ -41,7 +41,7 @@ func SanitizeURI(s string) (string, error) {
 	// Strip out sensitive query string parameters before logging.
 	urlValues := u.Query()
 	for key := range urlValues {
-		if checker, ok := sensitiveQueryChecks[key]; ok {
+		if checker, ok := sensitiveQueryChecks[strings.ToLower(key)]; ok {
 			if checker(key, urlValues) {
 				urlValues.Set(key, masking)
 			}
