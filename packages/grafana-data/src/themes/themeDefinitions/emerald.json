@@ -1,0 +1,85 @@
+{
+  "name": "Emerald",
+  "id": "emerald",
+  "colors": {
+    "mode": "dark",
+    "border": {
+      "weak": "rgba(74, 222, 128, 0.12)",
+      "medium": "rgba(74, 222, 128, 0.20)",
+      "strong": "rgba(74, 222, 128, 0.30)"
+    },
+    "text": {
+      "primary": "#E8F5EC",
+      "secondary": "rgba(200, 230, 210, 0.80)",
+      "disabled": "rgba(200, 230, 210, 0.50)",
+      "link": "#4ADE80",
+      "maxContrast": "#FFFFFF"
+    },
+    "primary": {
+      "main": "#22C55E",
+      "text": "#86EFAC",
+      "border": "#4ADE80",
+      "name": "primary",
+      "shade": "#16A34A",
+      "transparent": "#22C55E26",
+      "contrastText": "#0A1510",
+      "borderTransparent": "#4ADE8040"
+    },
+    "accent": {
+      "main": "#4ADE80",
+      "text": "#86EFAC",
+      "border": "#4ADE80",
+      "name": "accent",
+      "shade": "#22C55E",
+      "transparent": "#4ADE8026",
+      "contrastText": "#0A1510",
+      "borderTransparent": "#4ADE8040"
+    },
+    "secondary": {
+      "main": "rgba(74, 222, 128, 0.10)",
+      "shade": "rgba(74, 222, 128, 0.14)",
+      "transparent": "rgba(74, 222, 128, 0.08)",
+      "text": "rgba(200, 230, 210, 0.85)",
+      "contrastText": "rgba(200, 230, 210, 0.85)",
+      "border": "rgba(74, 222, 128, 0.10)",
+      "name": "secondary",
+      "borderTransparent": "rgba(74, 222, 128, 0.25)"
+    },
+    "background": {
+      "canvas": "#0A1510",
+      "page": "#0F1F18",
+      "primary": "#142820",
+      "secondary": "#1A3328",
+      "elevated": "#1A3328"
+    },
+    "action": {
+      "hover": "rgba(74, 222, 128, 0.16)",
+      "selected": "rgba(74, 222, 128, 0.12)",
+      "selectedBorder": "#4ADE80",
+      "focus": "rgba(74, 222, 128, 0.16)",
+      "hoverOpacity": 0.08,
+      "disabledText": "rgba(200, 230, 210, 0.50)",
+      "disabledBackground": "rgba(74, 222, 128, 0.08)",
+      "disabledOpacity": 0.38
+    },
+    "gradients": {
+      "brandHorizontal": "linear-gradient(270deg, #22C55E 0%, #4ADE80 100%)",
+      "brandVertical": "linear-gradient(0.01deg, #22C55E 0.01%, #4ADE80 99.99%)"
+    },
+    "contrastThreshold": 3,
+    "hoverFactor": 0.05,
+    "tonalOffset": 0.2
+  },
+  "visualization": {
+    "hue": [
+      "#22C55E",
+      "#4ADE80",
+      "#86EFAC",
+      "#10B981",
+      "#059669",
+      "#34D399",
+      "#6EE7B7",
+      "#A7F3D0"
+    ]
+  }
+}

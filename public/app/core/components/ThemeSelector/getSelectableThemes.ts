@@ -7,6 +7,7 @@ export function getSelectableThemes() {
     'tritanopia_dark',
     'tritanopia_light',
     'desertbloom',
+    'emerald',
     'gildedgrove',
     'sapphiredusk',
     'tron',
