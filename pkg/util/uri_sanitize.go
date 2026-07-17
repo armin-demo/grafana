@@ -38,11 +38,10 @@ func SanitizeURI(s string) (string, error) {
 		return "", fmt.Errorf("failed to sanitize URL")
 	}
 
-	// strip out sensitive query strings
+	// Strip out sensitive query string parameters before logging.
 	urlValues := u.Query()
 	for key := range urlValues {
-		lk := strings.ToLower(key)
-		if checker, ok := sensitiveQueryChecks[lk]; ok {
+		if checker, ok := sensitiveQueryChecks[key]; ok {
 			if checker(key, urlValues) {
 				urlValues.Set(key, masking)
 			}
