@@ -1,0 +1,13 @@
+# Disable CodeRabbit on this fork (Bugbot demo repo).
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+reviews:
+  auto_review:
+    enabled: false
+  review_status: false
+  high_level_summary: false
+  poem: false
+  tools:
+    github-checks:
+      enabled: false
+chat:
+  auto_reply: false
