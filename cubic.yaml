@@ -1,0 +1,7 @@
+# Disable cubic AI reviews on this fork (Bugbot demo repo).
+# yaml-language-server: $schema=https://cubic.dev/schema/cubic-repository-config.schema.json
+version: 1
+reviews:
+  enabled: false
+pr_descriptions:
+  generate: false
