@@ -68,8 +68,8 @@ func Authorize(ctx context.Context, ac AccessControlService, attr authorizer.Att
 		if err := ac.AuthorizeReadByUID(ctx, user, uid); err != nil {
 			return deny(err)
 		}
-	case "list":
-		return authorizer.DecisionAllow, "", nil // Always allow listing, receivers are filtered downstream.
+	case "list", "watch":
+		return authorizer.DecisionAllow, "", nil // Always allow listing/watching, receivers are filtered downstream.
 	case "create":
 		if err := ac.AuthorizeCreate(ctx, user); err != nil {
 			return deny(err)
