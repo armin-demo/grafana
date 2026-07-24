@@ -986,7 +986,7 @@ export interface FeatureToggles {
   kubernetesAuthzServiceAccountResourcePermissions?: boolean;
   /**
   * Enables recently viewed dashboards section in the browsing dashboard page
-  * @default false
+  * @default true
   */
   recentlyViewedDashboards?: boolean;
   /**

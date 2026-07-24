@@ -688,10 +688,10 @@ export const useFlagQueryHistoryRecentQueriesUI = (options?: ReactFlagEvaluation
  *
  * **Details:**
  * - flag key: `recentlyViewedDashboards`
- * - default value: `false`
+ * - default value: `true`
  */
 export const useFlagRecentlyViewedDashboards = (options?: ReactFlagEvaluationOptions): boolean => {
-  return useFlag("recentlyViewedDashboards", false, options).value;
+  return useFlag("recentlyViewedDashboards", true, options).value;
 };
 
 /**
