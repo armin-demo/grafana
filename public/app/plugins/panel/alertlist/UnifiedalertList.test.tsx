@@ -5,6 +5,7 @@ import { byRole, byText } from 'testing-library-selector';
 import {
   type FieldConfigSource,
   getDefaultTimeRange,
+  getThemeById,
   LoadingState,
   type PanelProps,
   PluginExtensionTypes,
@@ -36,7 +37,7 @@ import {
 import { GRAFANA_RULES_SOURCE_NAME } from '../../../features/alerting/unified/utils/datasource';
 import { AccessControlAction } from '../../../types/accessControl';
 
-import { UnifiedAlertListPanel } from './UnifiedAlertList';
+import { getStyles, UnifiedAlertListPanel } from './UnifiedAlertList';
 import { GroupMode, SortOrder, STAT_THRESHOLDS_DEFAULT, type UnifiedAlertListOptions, ViewMode } from './types';
 import * as utils from './util';
 
@@ -383,5 +384,21 @@ describe('UnifiedAlertList', () => {
       const link = screen.getByRole('link');
       expect(link).toBeInTheDocument();
     });
+  });
+
+  it('uses theme link color for View alert rule links under Visual Refresh Dark', () => {
+    const theme = getThemeById('visual_refresh_dark');
+    // Visual Refresh Dark: primary.text follows primary.main (ink/white), while text.link is orange.
+    expect(theme.colors.primary.text).toBe(theme.colors.text.primary);
+    expect(theme.colors.text.link).not.toBe(theme.colors.primary.text);
+
+    const styles = getStyles(theme);
+    render(
+      <a href="/alerting/rule/view" className={styles.link}>
+        View alert rule
+      </a>
+    );
+
+    expect(screen.getByRole('link')).toHaveStyle({ color: theme.colors.text.link });
   });
 });
