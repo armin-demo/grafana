@@ -5,6 +5,7 @@ import { byRole, byText } from 'testing-library-selector';
 import {
   type FieldConfigSource,
   getDefaultTimeRange,
+  getThemeById,
   LoadingState,
   type PanelProps,
   PluginExtensionTypes,
@@ -36,7 +37,7 @@ import {
 import { GRAFANA_RULES_SOURCE_NAME } from '../../../features/alerting/unified/utils/datasource';
 import { AccessControlAction } from '../../../types/accessControl';
 
-import { UnifiedAlertListPanel } from './UnifiedAlertList';
+import { UnifiedAlertListPanel, getStyles } from './UnifiedAlertList';
 import { GroupMode, SortOrder, STAT_THRESHOLDS_DEFAULT, type UnifiedAlertListOptions, ViewMode } from './types';
 import * as utils from './util';
 
@@ -178,6 +179,19 @@ const renderPanel = (options: Partial<UnifiedAlertListOptions> = defaultOptions)
 
 describe('UnifiedAlertList', () => {
   jest.spyOn(contextSrv, 'hasPermission').mockReturnValue(true);
+
+  it('uses theme link color for View alert rule links (orange under Visual Refresh)', () => {
+    const visualRefreshDark = getThemeById('visual_refresh_dark');
+    const styles = getStyles(visualRefreshDark);
+
+    // primary.text is near-white ink in Visual Refresh; links must use text.link (orange).
+    expect(visualRefreshDark.colors.primary.text.toLowerCase()).not.toBe(
+      visualRefreshDark.colors.text.link.toLowerCase()
+    );
+
+    const { container } = render(<a className={styles.link}>View alert rule</a>);
+    expect(container.firstChild).toHaveStyle({ color: visualRefreshDark.colors.text.link });
+  });
 
   it('subscribes to the dashboard refresh interval', async () => {
     jest.spyOn(defaultProps, 'replaceVariables').mockReturnValue('severity=critical');
