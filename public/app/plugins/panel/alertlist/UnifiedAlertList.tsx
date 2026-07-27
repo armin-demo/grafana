@@ -515,7 +515,8 @@ export const getStyles = (theme: GrafanaTheme2) => ({
   }),
   link: css({
     wordBreak: 'break-all',
-    color: theme.colors.primary.text,
+    // Use text.link (orange in Visual Refresh Dark); primary.text is near-white there.
+    color: theme.colors.text.link,
     display: 'flex',
     alignItems: 'center',
     gap: theme.spacing(1),
