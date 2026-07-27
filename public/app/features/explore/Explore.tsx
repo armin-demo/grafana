@@ -46,6 +46,11 @@ import { FlameGraphExploreContainer } from './FlameGraph/FlameGraphExploreContai
 import { GraphContainer } from './Graph/GraphContainer';
 import LogsContainer from './Logs/LogsContainer';
 import { LogsSamplePanel } from './Logs/LogsSamplePanel';
+import {
+  METRICS_SIDEBAR_LOCAL_STORAGE_KEYS,
+  MetricsSidebar,
+} from './MetricsSidebar/MetricsSidebar';
+import { isPrometheusCompatibleDatasource } from './MetricsSidebar/isPrometheusCompatibleDatasource';
 import { NoData } from './NoData';
 import { NoDataSourceCallToAction } from './NoDataSourceCallToAction';
 import { NodeGraphContainer } from './NodeGraph/NodeGraphContainer';
@@ -113,6 +118,7 @@ interface ExploreProps extends Themeable2 {
 
 interface ExploreState {
   contentOutlineVisible: boolean;
+  metricsSidebarVisible: boolean;
 }
 
 export type Props = ExploreProps & ConnectedProps<typeof connector>;
@@ -151,6 +157,7 @@ export class Explore extends PureComponent<Props, ExploreState> {
     super(props);
     this.state = {
       contentOutlineVisible: store.getBool(CONTENT_OUTLINE_LOCAL_STORAGE_KEYS.visible, true),
+      metricsSidebarVisible: store.getBool(METRICS_SIDEBAR_LOCAL_STORAGE_KEYS.visible, false),
     };
     this.graphEventBus = props.eventBus.newScopedBus('graph', { onlyLocal: false });
     this.logsEventBus = props.eventBus.newScopedBus('logs', { onlyLocal: false });
@@ -187,6 +194,21 @@ export class Explore extends PureComponent<Props, ExploreState> {
       });
       return {
         contentOutlineVisible: newContentOutlineVisible,
+      };
+    });
+    this.props.changeCompactMode(this.props.exploreId, false);
+  };
+
+  onMetricsSidebarToggle = () => {
+    store.set(METRICS_SIDEBAR_LOCAL_STORAGE_KEYS.visible, !this.state.metricsSidebarVisible);
+    this.setState((state) => {
+      const newMetricsSidebarVisible = this.props.compact ? true : !state.metricsSidebarVisible;
+      reportInteraction('explore_toolbar_metricssidebar_clicked', {
+        item: 'metrics',
+        type: newMetricsSidebarVisible ? 'open' : 'close',
+      });
+      return {
+        metricsSidebarVisible: newMetricsSidebarVisible,
       };
     });
     this.props.changeCompactMode(this.props.exploreId, false);
@@ -596,8 +618,10 @@ export class Explore extends PureComponent<Props, ExploreState> {
       compact,
       queryLibraryRef,
     } = this.props;
-    const { contentOutlineVisible } = this.state;
+    const { contentOutlineVisible, metricsSidebarVisible } = this.state;
     const styles = getStyles(theme);
+    const showMetricsSidebar =
+      metricsSidebarVisible && !compact && isPrometheusCompatibleDatasource(datasourceInstance);
     const showPanels = queryResponse && queryResponse.state !== LoadingState.NotStarted;
     const showNoData =
       queryResponse.state === LoadingState.Done &&
@@ -675,6 +699,8 @@ export class Explore extends PureComponent<Props, ExploreState> {
           onChangeTime={this.onChangeTime}
           onContentOutlineToogle={this.onContentOutlineToogle}
           isContentOutlineOpen={contentOutlineVisible}
+          onMetricsSidebarToggle={this.onMetricsSidebarToggle}
+          isMetricsSidebarOpen={metricsSidebarVisible}
         />
         <div
           style={{
@@ -687,6 +713,7 @@ export class Explore extends PureComponent<Props, ExploreState> {
             {contentOutlineVisible && !compact && (
               <ContentOutline scroller={this.scrollElement} panelId={`content-outline-container-${exploreId}`} />
             )}
+            {showMetricsSidebar && <MetricsSidebar exploreId={exploreId} />}
             <ScrollContainer
               data-testid={selectors.pages.Explore.General.scrollView}
               ref={(scrollElement) => {

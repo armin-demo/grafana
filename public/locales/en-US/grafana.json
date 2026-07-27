@@ -8436,8 +8436,10 @@
       }
     },
     "explore-toolbar": {
+      "metrics": "Metrics",
       "outline": "Outline",
-      "tooltip-content-outline": "Content outline"
+      "tooltip-content-outline": "Content outline",
+      "tooltip-metrics-sidebar": "Metrics"
     },
     "feature-toggle-page": {
       "description-explore-disabled": "To enable Explore, enable it in the Grafana config:",
@@ -8555,6 +8557,16 @@
     },
     "logs-volumne-panel-list": {
       "body-no-logs-volume-available": "No volume information available for the current queries and time range."
+    },
+    "metrics-sidebar": {
+      "empty": "No metrics found",
+      "error-title": "Failed to load metrics",
+      "error-unknown": "An unknown error occurred",
+      "loading": "Loading metrics...",
+      "no-matches": "No metrics match your search",
+      "search-aria-label": "Search metrics",
+      "search-placeholder": "Search metrics",
+      "title": "Metrics"
     },
     "next-prev-result": {
       "aria-label-next": "Next result button",

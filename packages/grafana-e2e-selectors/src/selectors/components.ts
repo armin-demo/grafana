@@ -65,6 +65,20 @@ export const versionedComponents = {
       '12.4.0': 'data-testid DashboardEditPaneSplitter body container',
     },
   },
+  MetricsSidebar: {
+    toggleButton: {
+      '13.2.0': 'data-testid MetricsSidebar toggle-button',
+    },
+    searchInput: {
+      '13.2.0': 'data-testid MetricsSidebar search-input',
+    },
+    metricList: {
+      '13.2.0': 'data-testid MetricsSidebar metric-list',
+    },
+    metricItem: {
+      '13.2.0': (name: string) => `data-testid MetricsSidebar metric-item ${name}`,
+    },
+  },
   Sidebar: {
     container: {
       '12.4.0': 'data-testid Sidebar container',

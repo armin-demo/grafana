@@ -27,6 +27,7 @@ import { getFiscalYearStartMonth, getTimeZone } from '../profile/state/selectors
 
 import { ExploreTimeControls } from './ExploreTimeControls';
 import { LiveTailButton } from './LiveTailButton';
+import { isPrometheusCompatibleDatasource } from './MetricsSidebar/isPrometheusCompatibleDatasource';
 import { ShortLinkButtonMenu } from './ShortLinkButtonMenu';
 import { ToolbarExtensionPoint } from './extensions/ToolbarExtensionPoint';
 import { changeDatasource } from './state/datasource';
@@ -67,9 +68,18 @@ interface Props {
   onChangeTime: (range: RawTimeRange, changedByScanner?: boolean) => void;
   onContentOutlineToogle: () => void;
   isContentOutlineOpen: boolean;
+  onMetricsSidebarToggle: () => void;
+  isMetricsSidebarOpen: boolean;
 }
 
-export function ExploreToolbar({ exploreId, onChangeTime, onContentOutlineToogle, isContentOutlineOpen }: Props) {
+export function ExploreToolbar({
+  exploreId,
+  onChangeTime,
+  onContentOutlineToogle,
+  isContentOutlineOpen,
+  onMetricsSidebarToggle,
+  isMetricsSidebarOpen,
+}: Props) {
   const visualRefreshEnabled = useFlagGrafanaVisualDesignRefresh();
   const dispatch = useDispatch();
   const splitted = useSelector(isSplit);
@@ -95,6 +105,7 @@ export function ExploreToolbar({ exploreId, onChangeTime, onContentOutlineToogle
   const correlationDetails = useSelector(selectCorrelationDetails);
   const isCorrelationsEditorMode = correlationDetails?.editorMode || false;
   const isLeftPane = useSelector(isLeftPaneSelector(exploreId));
+  const showMetricsSidebarToggle = isPrometheusCompatibleDatasource(datasourceInstance);
 
   const shouldRotateSplitIcon = useMemo(
     () => (isLeftPane && isLargerPane) || (!isLeftPane && !isLargerPane),
@@ -228,6 +239,22 @@ export function ExploreToolbar({ exploreId, onChangeTime, onContentOutlineToogle
           >
             <Trans i18nKey="explore.explore-toolbar.outline">Outline</Trans>
           </ToolbarButton>,
+          showMetricsSidebarToggle && (
+            <ToolbarButton
+              key="metrics-sidebar"
+              variant="canvas"
+              tooltip={t('explore.explore-toolbar.tooltip-metrics-sidebar', 'Metrics')}
+              data-testid={selectors.components.MetricsSidebar.toggleButton}
+              icon="gf-prometheus"
+              iconOnly={splitted}
+              onClick={onMetricsSidebarToggle}
+              aria-expanded={isMetricsSidebarOpen}
+              aria-controls={isMetricsSidebarOpen ? `metrics-sidebar-container-${exploreId}` : undefined}
+              className={styles.toolbarButton}
+            >
+              <Trans i18nKey="explore.explore-toolbar.metrics">Metrics</Trans>
+            </ToolbarButton>
+          ),
           <DataSourcePicker
             key={`${exploreId}-ds-picker`}
             mixed={!isCorrelationsEditorMode}

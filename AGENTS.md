@@ -166,3 +166,14 @@ Build a specific plugin: `yarn workspace @grafana-plugins/<name> dev`
 - **Frontend tests**: The `yarn test` script includes `--watch` by default. Always use `yarn jest --no-watch` or add `--watchAll=false` to run tests once and exit.
 - **Backend tests**: Some packages (e.g. `pkg/api/`) have slow test compilation (~2 min) due to large dependency graphs. Use targeted test runs with `-run TestName` where possible.
 - All standard build/test/lint commands are documented in the Commands section above.
+
+## Learned User Preferences
+
+- Preferred name is Armin; software engineer who uses Linear, Datadog, and Notion.
+- When asked to start or run the local server, start both backend and frontend dev processes.
+
+## Learned Workspace Facts
+
+- Local UI development requires both `make run` and `yarn start`; verify http://localhost:3000 responds after starting.
+- The "Connection to server is lost" banner comes from Grafana Live's WebSocket (`/api/live/ws`) and usually means the backend is unreachable — restart both dev servers and hard-refresh the browser.
+- Dev server processes can stop silently; check terminal logs and port 3000 before assuming servers are still healthy.
