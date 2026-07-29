@@ -34,6 +34,13 @@ jest.mock('../state/query', () => ({
 jest.mock('@grafana/runtime', () => ({
   ...jest.requireActual('@grafana/runtime'),
   reportInteraction: (...args: unknown[]) => mockReportInteraction(...args),
+  config: {
+    ...jest.requireActual('@grafana/runtime').config,
+    buildInfo: {
+      ...jest.requireActual('@grafana/runtime').config.buildInfo,
+      version: '12.0.0-test',
+    },
+  },
 }));
 
 jest.mock('react-virtualized-auto-sizer', () => {
@@ -190,6 +197,47 @@ describe('MetricsSidebar', () => {
     expect(screen.getByTestId('data-testid MetricsSidebar metric-item http_requests_total')).toBeInTheDocument();
   });
 
+  it('reports a viewed interaction after metrics load', async () => {
+    setup();
+
+    await waitFor(() => {
+      expect(mockReportInteraction).toHaveBeenCalledWith(
+        'explore_metrics_sidebar_viewed',
+        expect.objectContaining({
+          exploreId: 'left',
+          datasourceType: 'prometheus',
+          grafana_version: '12.0.0-test',
+          metricCount: 3,
+        })
+      );
+    });
+  });
+
+  it('reports search usage once when the user filters metrics', async () => {
+    const user = userEvent.setup();
+    setup();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('data-testid MetricsSidebar metric-item go_goroutines')).toBeInTheDocument();
+    });
+
+    await user.type(screen.getByTestId('data-testid MetricsSidebar search-input'), 'http');
+
+    expect(mockReportInteraction).toHaveBeenCalledWith(
+      'explore_metrics_sidebar_search_used',
+      expect.objectContaining({
+        exploreId: 'left',
+        datasourceType: 'prometheus',
+        grafana_version: '12.0.0-test',
+        queryLength: 1,
+        metricCount: 3,
+      })
+    );
+    expect(
+      mockReportInteraction.mock.calls.filter(([name]) => name === 'explore_metrics_sidebar_search_used')
+    ).toHaveLength(1);
+  });
+
   it('sets expr on the empty query row and runs queries when a metric is clicked', async () => {
     const user = userEvent.setup();
     setup({
@@ -213,6 +261,19 @@ describe('MetricsSidebar', () => {
       ],
     });
     expect(mockRunQueries).toHaveBeenCalledWith({ exploreId: 'left' });
+    expect(mockReportInteraction).toHaveBeenCalledWith(
+      'explore_metrics_sidebar_metric_clicked',
+      expect.objectContaining({
+        exploreId: 'left',
+        datasourceType: 'prometheus',
+        grafana_version: '12.0.0-test',
+        metric: 'go_goroutines',
+        targetRefId: 'B',
+        hasSearch: false,
+        resultCount: 3,
+        metricCount: 3,
+      })
+    );
   });
 
   it('sets expr on the last query row when all rows have expr', async () => {

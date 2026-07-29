@@ -20,7 +20,7 @@ import {
 } from '@grafana/data';
 import { selectors } from '@grafana/e2e-selectors';
 import { t } from '@grafana/i18n';
-import { getDataSourceSrv, reportInteraction } from '@grafana/runtime';
+import { config, getDataSourceSrv, reportInteraction } from '@grafana/runtime';
 import { type DataQuery } from '@grafana/schema';
 import {
   type AdHocFilterItem,
@@ -206,6 +206,9 @@ export class Explore extends PureComponent<Props, ExploreState> {
       reportInteraction('explore_toolbar_metricssidebar_clicked', {
         item: 'metrics',
         type: newMetricsSidebarVisible ? 'open' : 'close',
+        datasourceType: this.props.datasourceInstance?.type ?? 'unknown',
+        grafana_version: config.buildInfo.version,
+        exploreId: this.props.exploreId,
       });
       return {
         metricsSidebarVisible: newMetricsSidebarVisible,
