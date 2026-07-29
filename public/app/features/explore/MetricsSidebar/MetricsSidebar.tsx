@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import { FixedSizeList } from 'react-window';
 import { useAsyncFn } from 'react-use';
@@ -8,7 +8,6 @@ import { shallowEqual } from 'react-redux';
 import { type DataQuery, type GrafanaTheme2 } from '@grafana/data';
 import { selectors } from '@grafana/e2e-selectors';
 import { t } from '@grafana/i18n';
-import { reportInteraction } from '@grafana/runtime';
 import {
   Alert,
   EmptyState,
@@ -24,6 +23,7 @@ import { useDispatch, useSelector } from 'app/types/store';
 import { changeQueries, runQueries } from '../state/query';
 import { getExploreItemSelector } from '../state/selectors';
 
+import { reportMetricsSidebarInteraction } from './analytics';
 import { getMetricsLanguageProvider } from './isPrometheusCompatibleDatasource';
 
 const ROW_HEIGHT = 28;
@@ -73,7 +73,10 @@ export function MetricsSidebar({ exploreId }: Props) {
   }, shallowEqual);
 
   const [search, setSearch] = useState('');
+  const searchUsedRef = useRef(false);
+  const viewedReportedRef = useRef(false);
   const languageProvider = getMetricsLanguageProvider(datasourceInstance);
+  const datasourceType = datasourceInstance?.type;
 
   const [metricsState, fetchMetrics] = useAsyncFn(async () => {
     if (!languageProvider || !range) {
@@ -101,6 +104,34 @@ export function MetricsSidebar({ exploreId }: Props) {
     return metrics.filter((metric) => metric.toLowerCase().includes(lower));
   }, [metrics, search]);
 
+  // Impression when the sidebar is shown (including restore-from-localStorage opens).
+  useEffect(() => {
+    if (viewedReportedRef.current || metricsState.loading || metricsState.error) {
+      return;
+    }
+    if (!metricsState.value) {
+      return;
+    }
+    viewedReportedRef.current = true;
+    reportMetricsSidebarInteraction('explore_metrics_sidebar_viewed', exploreId, datasourceType, {
+      metricCount: metrics.length,
+    });
+  }, [datasourceType, exploreId, metrics.length, metricsState.error, metricsState.loading, metricsState.value]);
+
+  const onSearchChange = useCallback(
+    (value: string) => {
+      setSearch(value);
+      if (!searchUsedRef.current && value.trim().length > 0) {
+        searchUsedRef.current = true;
+        reportMetricsSidebarInteraction('explore_metrics_sidebar_search_used', exploreId, datasourceType, {
+          queryLength: value.trim().length,
+          metricCount: metrics.length,
+        });
+      }
+    },
+    [datasourceType, exploreId, metrics.length]
+  );
+
   const onMetricClick = useCallback(
     (metricName: string) => {
       const targetIndex = findTargetQueryIndex(queries);
@@ -114,12 +145,15 @@ export function MetricsSidebar({ exploreId }: Props) {
 
       dispatch(changeQueries({ exploreId, queries: updated }));
       dispatch(runQueries({ exploreId }));
-      reportInteraction('explore_metrics_sidebar_metric_clicked', {
+      reportMetricsSidebarInteraction('explore_metrics_sidebar_metric_clicked', exploreId, datasourceType, {
         metric: metricName,
         targetRefId: queries[targetIndex]?.refId,
+        hasSearch: search.trim().length > 0,
+        resultCount: filteredMetrics.length,
+        metricCount: metrics.length,
       });
     },
-    [dispatch, exploreId, queries]
+    [datasourceType, dispatch, exploreId, filteredMetrics.length, metrics.length, queries, search]
   );
 
   const renderList = () => {
@@ -215,7 +249,7 @@ export function MetricsSidebar({ exploreId }: Props) {
         </Text>
         <FilterInput
           value={search}
-          onChange={setSearch}
+          onChange={onSearchChange}
           placeholder={t('explore.metrics-sidebar.search-placeholder', 'Search metrics')}
           escapeRegex={false}
           data-testid={selectors.components.MetricsSidebar.searchInput}
