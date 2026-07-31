@@ -19,7 +19,7 @@ import { type Team } from 'app/types/teams';
 import { alertsCardClicked } from '../analytics/main';
 
 import { SummaryCard, SummaryCardAge, SummaryCardTitle } from './SummaryCard';
-import { HOME_CARD_MAX_ITEMS } from './constants';
+import { HOME_CARD_MAX_ITEMS, HOME_FIRING_ALERTS_ID } from './constants';
 import { severityLevelColor, severityLevelRank } from './severity';
 
 /** Extract the path (with query string) from an absolute generatorURL, falling back to the raw value. */
@@ -139,6 +139,7 @@ function FiringAlertsCardInner() {
 
   return (
     <SummaryCard
+      id={HOME_FIRING_ALERTS_ID}
       title={t('home.firing-alerts-card.title', 'Firing alerts')}
       count={alerts?.length ?? 0}
       headerExtra={

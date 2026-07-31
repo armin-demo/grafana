@@ -12,7 +12,7 @@ import { SupportedPlugin } from 'app/features/alerting/unified/types/pluginBridg
 import { incidentsCardClicked } from '../analytics/main';
 
 import { SummaryCard, SummaryCardAge, SummaryCardTitle } from './SummaryCard';
-import { HOME_CARD_MAX_ITEMS } from './constants';
+import { HOME_ACTIVE_INCIDENTS_ID, HOME_CARD_MAX_ITEMS } from './constants';
 import { severityLevelColor } from './severity';
 
 export function IncidentsCard() {
@@ -68,6 +68,7 @@ function IncidentsCardInner({ pluginId, canAccess, canDeclare }: IncidentsCardIn
 
   return (
     <SummaryCard
+      id={HOME_ACTIVE_INCIDENTS_ID}
       title={t('home.incidents-card.title', 'Active incidents')}
       count={incidentCount}
       countLimit={ACTIVE_INCIDENTS_QUERY_LIMIT}

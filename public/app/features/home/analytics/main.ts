@@ -5,6 +5,7 @@ import {
   type ClearHistoryClicked,
   type EmptyCtaClicked,
   type IncidentsCardClicked,
+  type OverviewBarClicked,
   type TabChanged,
 } from './types';
 
@@ -24,3 +25,6 @@ export const alertsCardClicked = createHomepageEvent<AlertsCardClicked>('alerts_
 
 /** Fired when the user clicks any control on the homepage Active incidents card. */
 export const incidentsCardClicked = createHomepageEvent<IncidentsCardClicked>('incidents_card_clicked');
+
+/** Fired when the user clicks a segment on the homepage overview bar. */
+export const overviewBarClicked = createHomepageEvent<OverviewBarClicked>('overview_bar_clicked');
