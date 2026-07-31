@@ -25,6 +25,11 @@ export interface UseSelectionStateResult {
   trackQueryRename: (originalRefId: string, updatedRefId: string) => void;
   activateQuery: (query: DataQuery | ExpressionQuery) => void;
   activateTransformation: (transformation: Transformation) => void;
+  /**
+   * Moves the active (editor/highlight) card without touching the bulk selection or its anchors.
+   * Used by the stacked view so entering the stack and scrolling through it never clear checkboxes.
+   */
+  moveActiveCard: (queryRefId: string | null, transformationId: string | null) => void;
   toggleQuerySelection: (query: DataQuery | ExpressionQuery, modifiers?: SelectionModifiers) => void;
   toggleTransformationSelection: (transformation: Transformation, modifiers?: SelectionModifiers) => void;
   clearSelection: () => void;
@@ -183,6 +188,11 @@ export function useSelectionState({
     setActiveQueryRefId(null);
     setActiveTransformationId(transformation.transformId);
     onClearSideEffectsRef.current?.();
+  }, []);
+
+  const moveActiveCard = useCallback((queryRefId: string | null, transformationId: string | null) => {
+    setActiveQueryRefId(queryRefId);
+    setActiveTransformationId(transformationId);
   }, []);
 
   const toggleQuerySelection = useCallback((query: DataQuery | ExpressionQuery, modifiers?: SelectionModifiers) => {
@@ -348,6 +358,7 @@ export function useSelectionState({
     trackQueryRename,
     activateQuery,
     activateTransformation,
+    moveActiveCard,
     toggleQuerySelection,
     toggleTransformationSelection,
     clearSelection,
