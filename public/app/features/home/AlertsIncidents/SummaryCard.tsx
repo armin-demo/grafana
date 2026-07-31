@@ -30,6 +30,8 @@ interface SummaryCardProps<T> {
   renderItem: (item: T) => ReactNode;
   // Footer element, already gated by the caller. Omit to render no footer.
   footer?: ReactNode;
+  // Stable DOM id used as a scroll target from the homepage overview bar.
+  id?: string;
 }
 
 export function SummaryCard<T>({
@@ -45,13 +47,14 @@ export function SummaryCard<T>({
   getItemKey,
   renderItem,
   footer,
+  id,
 }: SummaryCardProps<T>) {
   const styles = useStyles2(getStyles);
 
   const countText = countLimit !== undefined && count >= countLimit ? `${countLimit}+` : String(count);
 
   return (
-    <HomeSection display="flex" direction="column">
+    <HomeSection display="flex" direction="column" id={id}>
       <Stack direction="column" gap={2} grow={1}>
         <Stack direction="column" gap={2} grow={1}>
           <Stack alignItems="center" justifyContent="space-between">

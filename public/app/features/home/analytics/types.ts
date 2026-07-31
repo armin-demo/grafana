@@ -38,3 +38,8 @@ export interface IncidentsCardClicked extends EventProperty {
   /** Canonical severity of the clicked incident (incident_detail only). */
   severity?: string;
 }
+
+export interface OverviewBarClicked extends EventProperty {
+  /** Which overview-bar segment was clicked. */
+  segment: 'alerts' | 'incidents';
+}

@@ -13,6 +13,7 @@ import { isOnPrem } from 'app/core/utils/isOnPrem';
 
 import { FiringAlertsCard, canViewFiringAlerts } from './AlertsIncidents/FiringAlertsCard';
 import { IncidentsCard } from './AlertsIncidents/IncidentsCard';
+import { OverviewBar } from './AlertsIncidents/OverviewBar';
 import { DashboardTabs } from './DashboardTabs/DashboardTabs';
 import { type HomepageTabExtensionProps } from './DashboardTabs/types';
 import { HomePageSkeleton } from './HomePageSkeleton';
@@ -83,6 +84,8 @@ export default function HomePage() {
         ) : (
           <Suspense fallback={skeleton}>
             <Stack direction="column" gap={2}>
+              <OverviewBar />
+
               <HomeSection direction="column" display="flex" gap={2}>
                 {/* Assistant injects an Assistant-based prompt input when available */}
                 {renderLimitedComponents({
