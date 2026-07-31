@@ -20,7 +20,29 @@ describe('pickMetricsDatasourceUid', () => {
     expect(pickMetricsDatasourceUid()).toBeNull();
   });
 
-  it('prefers the default metrics datasource', () => {
+  it('prefers grafanacloud-usage over the default hosted Prometheus datasource', () => {
+    getDataSourceSrvMock.mockReturnValue({
+      getList: () => [
+        { uid: 'grafanacloud-prom', name: 'grafanacloud-prom', type: 'prometheus', isDefault: true },
+        { uid: 'grafanacloud-usage', name: 'grafanacloud-usage', type: 'prometheus', isDefault: false },
+      ],
+    } as ReturnType<typeof getDataSourceSrv>);
+
+    expect(pickMetricsDatasourceUid()).toEqual({ uid: 'grafanacloud-usage', name: 'grafanacloud-usage' });
+  });
+
+  it('prefers a default Prometheus datasource over a non-Prometheus default', () => {
+    getDataSourceSrvMock.mockReturnValue({
+      getList: () => [
+        { uid: 'cw', name: 'CloudWatch', type: 'cloudwatch', isDefault: true },
+        { uid: 'prom-a', name: 'Prometheus A', type: 'prometheus', isDefault: false },
+      ],
+    } as ReturnType<typeof getDataSourceSrv>);
+
+    expect(pickMetricsDatasourceUid()).toEqual({ uid: 'prom-a', name: 'Prometheus A' });
+  });
+
+  it('prefers the default Prometheus datasource among Prometheus sources', () => {
     getDataSourceSrvMock.mockReturnValue({
       getList: () => [
         { uid: 'prom-a', name: 'Prometheus A', type: 'prometheus', isDefault: false },
@@ -29,6 +51,14 @@ describe('pickMetricsDatasourceUid', () => {
     } as ReturnType<typeof getDataSourceSrv>);
 
     expect(pickMetricsDatasourceUid()).toEqual({ uid: 'prom-b', name: 'Prometheus B' });
+  });
+
+  it('returns null when only non-Prometheus metrics datasources exist', () => {
+    getDataSourceSrvMock.mockReturnValue({
+      getList: () => [{ uid: 'cw', name: 'CloudWatch', type: 'cloudwatch', isDefault: true }],
+    } as ReturnType<typeof getDataSourceSrv>);
+
+    expect(pickMetricsDatasourceUid()).toBeNull();
   });
 });
 

@@ -5,6 +5,12 @@ export const HOME_HOSTED_METRICS_ID = 'home-hosted-metrics';
 export const METRICS_DRILLDOWN_PATH = '/a/grafana-metricsdrilldown-app';
 
 /**
+ * Grafana Cloud usage Prometheus datasource. Serves grafanacloud_instance_*
+ * billable/usage series (not the stack's hosted metrics ingest DS).
+ */
+export const GRAFANA_CLOUD_USAGE_DATASOURCE_UID = 'grafanacloud-usage';
+
+/**
  * PromQL for active series. Prefer Cloud billable/active series when present,
  * otherwise fall back to Prometheus TSDB head series (local / self-managed).
  */

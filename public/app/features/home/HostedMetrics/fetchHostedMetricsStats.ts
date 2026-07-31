@@ -1,6 +1,6 @@
 import { getBackendSrv, getDataSourceSrv } from '@grafana/runtime';
 
-import { ACTIVE_SERIES_QUERIES, DPM_QUERIES } from './constants';
+import { ACTIVE_SERIES_QUERIES, DPM_QUERIES, GRAFANA_CLOUD_USAGE_DATASOURCE_UID } from './constants';
 
 export type HostedMetricsStats = {
   activeSeries: number | null;
@@ -50,16 +50,25 @@ async function firstMatchingValue(uid: string, exprs: readonly string[]): Promis
   return null;
 }
 
-/** Pick the default metrics DS when present, otherwise the first metrics-capable source. */
+function isPrometheusLike(type: string): boolean {
+  return type === 'prometheus' || type.includes('prometheus');
+}
+
+/**
+ * Prefer grafanacloud-usage (Cloud instance_* series), then a Prometheus-compatible
+ * metrics source. Instant /api/v1/query only works on Prometheus-like datasources.
+ */
 export function pickMetricsDatasourceUid(): { uid: string; name: string } | null {
   const list = getDataSourceSrv().getList({ metrics: true, tracing: false, annotations: false, variables: false });
   if (list.length === 0) {
     return null;
   }
+  const prometheusLike = list.filter((ds) => isPrometheusLike(ds.type));
   const preferred =
-    list.find((ds) => ds.isDefault) ??
-    list.find((ds) => ds.type === 'prometheus' || ds.type.includes('prometheus')) ??
-    list[0];
+    list.find((ds) => ds.uid === GRAFANA_CLOUD_USAGE_DATASOURCE_UID) ??
+    prometheusLike.find((ds) => ds.isDefault) ??
+    prometheusLike[0] ??
+    null;
   if (!preferred?.uid) {
     return null;
   }
