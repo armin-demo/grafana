@@ -52,7 +52,7 @@ func Authorize(ctx context.Context, ac AccessControlService, attr authorizer.Att
 		if err := ac.AuthorizeReadByUID(ctx, user, uid); err != nil {
 			return deny(err)
 		}
-	case "list":
+	case "list", "watch":
 		if err := ac.AuthorizeReadSome(ctx, user); err != nil {
 			return deny(err)
 		}
