@@ -38,3 +38,10 @@ export interface IncidentsCardClicked extends EventProperty {
   /** Canonical severity of the clicked incident (incident_detail only). */
   severity?: string;
 }
+
+export interface HostedMetricsCardClicked extends EventProperty {
+  /** Which control on the Hosted Metrics stats card was clicked. */
+  action: 'open_metrics' | 'add_datasource';
+  /** Where the control lives on the card. */
+  placement: 'empty_state' | 'footer';
+}

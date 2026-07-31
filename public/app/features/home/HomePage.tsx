@@ -17,6 +17,7 @@ import { DashboardTabs } from './DashboardTabs/DashboardTabs';
 import { type HomepageTabExtensionProps } from './DashboardTabs/types';
 import { HomePageSkeleton } from './HomePageSkeleton';
 import { HomeSection } from './HomeSection';
+import { HostedMetricsStatsCard } from './HostedMetrics/HostedMetricsStatsCard';
 import Recommendations from './Recommendations/Recommendations';
 import useHomeGreeting from './useHomeGreeting';
 
@@ -95,6 +96,8 @@ export default function HomePage() {
               </HomeSection>
 
               {redesignEnabled && <Recommendations />}
+
+              <HostedMetricsStatsCard />
 
               <Grid gap={2} columns={{ xs: 1, md: 2 }}>
                 <FiringAlertsCard />
