@@ -788,7 +788,7 @@ describe('QueryEditorContextWrapper - stacked mode', () => {
     expect(result.current.selectedQuery).toBeNull();
   });
 
-  it('exits stacked mode when an alert is selected', () => {
+  it('keeps the stacked layout enabled when an alert is selected (the pane hides it, not the state)', () => {
     mockUseAlertRulesForPanel.mockReturnValue({
       alertRules: [mockAlert],
       loading: false,
@@ -799,12 +799,28 @@ describe('QueryEditorContextWrapper - stacked mode', () => {
     act(() => result.current.stackedMode.enter());
     expect(result.current.stackedMode.enabled).toBe(true);
 
+    // Opening an alert must not collapse the stack: the content pane hides it while the alert view
+    // is open, and returning to queries restores it.
     act(() => result.current.setSelectedAlert(mockAlert));
+    expect(result.current.stackedMode.enabled).toBe(true);
 
-    expect(result.current.stackedMode.enabled).toBe(false);
+    // Returning to the query view leaves the stack intact.
+    act(() => result.current.setSelectedAlert(null));
+    expect(result.current.stackedMode.enabled).toBe(true);
   });
 
-  it('entering stacked mode collapses existing multi-selection to the primary item', () => {
+  it('keeps the stacked layout enabled when the selection is cleared', () => {
+    const { result } = renderWithWrapper(makeMockDataPane());
+
+    act(() => result.current.stackedMode.enter());
+    expect(result.current.stackedMode.enabled).toBe(true);
+
+    act(() => result.current.clearSelection());
+
+    expect(result.current.stackedMode.enabled).toBe(true);
+  });
+
+  it('preserves the existing multi-selection when entering stacked mode', () => {
     const dataPane = makeMockDataPane();
     const { result } = renderWithWrapper(dataPane);
 
@@ -817,14 +833,15 @@ describe('QueryEditorContextWrapper - stacked mode', () => {
 
     act(() => result.current.stackedMode.enter());
 
-    // Entering stacked mode exits multi-select and collapses the bulk set to the primary
-    // (most-recently-selected) card, which becomes the single active selection.
-    expect(result.current.multiSelectMode).toBe(false);
+    // Entering stacked mode keeps multi-select on and the checkboxes intact; it only pins the
+    // primary (most-recently-selected) card as the active editor card.
+    expect(result.current.stackedMode.enabled).toBe(true);
+    expect(result.current.multiSelectMode).toBe(true);
+    expect(result.current.selectedQueryRefIds).toEqual(['A', 'B']);
     expect(result.current.selectedQuery?.refId).toBe('B');
-    expect(result.current.selectedQueryRefIds).toEqual([]);
   });
 
-  it('entering multi-select mode exits stacked mode', () => {
+  it('keeps the stacked layout enabled when entering multi-select mode', () => {
     const dataPane = makeMockDataPane();
     const { result } = renderWithWrapper(dataPane);
 
@@ -834,7 +851,26 @@ describe('QueryEditorContextWrapper - stacked mode', () => {
     act(() => result.current.setMultiSelectMode(true));
 
     expect(result.current.multiSelectMode).toBe(true);
-    expect(result.current.stackedMode.enabled).toBe(false);
+    expect(result.current.stackedMode.enabled).toBe(true);
+  });
+
+  it('does not clear the multi-selection when the stack scrolls to a new card', () => {
+    const dataPane = makeMockDataPane();
+    const { result } = renderWithWrapper(dataPane);
+
+    // Build a bulk selection, enter the stack, then simulate the observer following a scroll.
+    act(() => result.current.setMultiSelectMode(true));
+    act(() => result.current.toggleQuerySelection({ refId: 'B' } as DataQuery, { multi: true }));
+    act(() => result.current.stackedMode.enter());
+    expect(result.current.selectedQueryRefIds).toEqual(['A', 'B']);
+
+    const scrolledItem: StackedEditorItem = { type: QueryEditorType.Query, id: 'A' };
+    act(() => result.current.stackedMode.syncActiveItem(scrolledItem));
+
+    // Scrolling only moves the active card; the checkboxes and mode survive.
+    expect(result.current.selectedQuery?.refId).toBe('A');
+    expect(result.current.selectedQueryRefIds).toEqual(['A', 'B']);
+    expect(result.current.multiSelectMode).toBe(true);
   });
 
   // Opening a picker temporarily swaps to the single pane (expression/transformation) or a

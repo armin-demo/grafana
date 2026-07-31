@@ -82,6 +82,7 @@ export function QueryEditorContextWrapper({
     trackQueryRename,
     activateQuery: activateQueryRaw,
     activateTransformation: activateTransformationRaw,
+    moveActiveCard: moveActiveCardRaw,
     toggleQuerySelection: toggleQuerySelectionRaw,
     toggleTransformationSelection: toggleTransformationSelectionRaw,
     clearSelection: clearSelectionRaw,
@@ -107,28 +108,31 @@ export function QueryEditorContextWrapper({
     [onCardSelectionChangeRaw]
   );
 
+  // Moves the active card for the stack (enter / scroll-follow) while leaving any multi-select
+  // checkboxes untouched — the stack is a layout choice, not a selection mode.
+  const moveActiveCard = useCallback(
+    (queryRefId: string | null, transformationId: string | null) => {
+      setSelectedAlertId(null);
+      setConfirmingDeleteActionKey(null);
+      moveActiveCardRaw(queryRefId, transformationId);
+    },
+    [moveActiveCardRaw]
+  );
+
   const stackedMode = useStackedModeOrchestration({
-    onCardSelectionChange,
+    activateItem: moveActiveCard,
     selectedQueryRefIds,
     selectedTransformationIds,
-    // Entering stacked mode clears cross-mode UI state (alert selection, multi-select).
+    // The stack is a layout choice that coexists with multi-select, so entering it only clears the
+    // alert selection (which owns the content pane) — never the multi-select checkboxes.
     onEnter: () => {
       setSelectedAlertId(null);
-      setMultiSelectMode(false);
     },
   });
-  // Destructured for tight dep arrays in the selection handlers below — these property reads
-  // are referentially stable when their underlying state doesn't change.
-  const { enabled: isStackedMode, exit: exitStackedMode } = stackedMode;
 
   const toggleQuerySelection = useCallback(
     (query: DataQuery | ExpressionQuery, modifiers?: SelectionModifiers) => {
       setSelectedAlertId(null);
-      if (isStackedMode) {
-        // Stacked mode is single-select; the renderer scrolls to whatever becomes selected.
-        onCardSelectionChange(query.refId, null);
-        return;
-      }
       setConfirmingDeleteActionKey(null);
       if (modifiers?.multi || modifiers?.range) {
         if (!multiSelectMode) {
@@ -137,18 +141,15 @@ export function QueryEditorContextWrapper({
         toggleQuerySelectionRaw(query, modifiers);
         return;
       }
+      // Plain click moves the active card (and scrolls the stack to it) without clearing checkboxes.
       activateQueryRaw(query);
     },
-    [isStackedMode, onCardSelectionChange, multiSelectMode, activateQueryRaw, toggleQuerySelectionRaw]
+    [multiSelectMode, activateQueryRaw, toggleQuerySelectionRaw]
   );
 
   const toggleTransformationSelection = useCallback(
     (transformation: Transformation, modifiers?: SelectionModifiers) => {
       setSelectedAlertId(null);
-      if (isStackedMode) {
-        onCardSelectionChange(null, transformation.transformId);
-        return;
-      }
       setConfirmingDeleteActionKey(null);
       if (modifiers?.multi || modifiers?.range) {
         if (!multiSelectMode) {
@@ -157,20 +158,22 @@ export function QueryEditorContextWrapper({
         toggleTransformationSelectionRaw(transformation, modifiers);
         return;
       }
+      // Plain click moves the active card (and scrolls the stack to it) without clearing checkboxes.
       activateTransformationRaw(transformation);
     },
-    [isStackedMode, onCardSelectionChange, multiSelectMode, activateTransformationRaw, toggleTransformationSelectionRaw]
+    [multiSelectMode, activateTransformationRaw, toggleTransformationSelectionRaw]
   );
 
   const resetSelectionState = useCallback(
     (alertId: string | null) => {
-      exitStackedMode();
+      // Deliberately leaves the stacked layout intact: the content pane hides the stack while an
+      // alert is open and restores it on return, so clearing a selection must not collapse it.
       setSelectedAlertId(alertId);
       setMultiSelectMode(false);
       setConfirmingDeleteActionKey(null);
       clearSelectionRaw();
     },
-    [clearSelectionRaw, exitStackedMode]
+    [clearSelectionRaw]
   );
 
   const clearSelection = useCallback(() => resetSelectionState(null), [resetSelectionState]);
@@ -185,22 +188,15 @@ export function QueryEditorContextWrapper({
         if (!hasCards) {
           return;
         }
-        // Multi-select and stacked mode are mutually exclusive, so leaving stacked mode here
-        // keeps the two views from being active at once before seeding the bulk selection.
-        exitStackedMode();
+        // The stacked layout coexists with multi-select, so entering the mode seeds the bulk
+        // selection from the active card without disturbing whether the stack is shown.
         selectActiveInMultiSelectionRaw();
       } else {
         clearMultiSelectionRaw();
       }
       setMultiSelectMode(enabled);
     },
-    [
-      queryRunnerState?.queries,
-      transformations,
-      exitStackedMode,
-      clearMultiSelectionRaw,
-      selectActiveInMultiSelectionRaw,
-    ]
+    [queryRunnerState?.queries, transformations, clearMultiSelectionRaw, selectActiveInMultiSelectionRaw]
   );
 
   // Wraps onCardSelectionChange with a UI reset for use in finalizePendingExpression /
