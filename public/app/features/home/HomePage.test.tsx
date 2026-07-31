@@ -26,7 +26,11 @@ beforeEach(() => {
     http.get('/api/user/teams', () => HttpResponse.json([])),
     http.get('/api/alertmanager/:datasourceUid/api/v2/alerts', () => HttpResponse.json([])),
     // IncidentsCard checks the IRM/Incident plugins; report them absent so it renders nothing
-    http.get('/api/plugins/:pluginId/settings', () => HttpResponse.json({ enabled: false }))
+    http.get('/api/plugins/:pluginId/settings', () => HttpResponse.json({ enabled: false })),
+    // HostedMetricsStatsCard proxies PromQL instant queries; return empty vectors by default
+    http.get('/api/datasources/proxy/uid/:uid/api/v1/query', () =>
+      HttpResponse.json({ status: 'success', data: { resultType: 'vector', result: [] } })
+    )
   );
 });
 

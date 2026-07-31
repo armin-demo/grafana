@@ -4,6 +4,7 @@ import {
   type AlertsCardClicked,
   type ClearHistoryClicked,
   type EmptyCtaClicked,
+  type HostedMetricsCardClicked,
   type IncidentsCardClicked,
   type TabChanged,
 } from './types';
@@ -24,3 +25,6 @@ export const alertsCardClicked = createHomepageEvent<AlertsCardClicked>('alerts_
 
 /** Fired when the user clicks any control on the homepage Active incidents card. */
 export const incidentsCardClicked = createHomepageEvent<IncidentsCardClicked>('incidents_card_clicked');
+
+/** Fired when the user clicks any control on the homepage Hosted Metrics stats card. */
+export const hostedMetricsCardClicked = createHomepageEvent<HostedMetricsCardClicked>('hosted_metrics_card_clicked');
