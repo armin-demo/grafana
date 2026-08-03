@@ -5,14 +5,15 @@ import { type StackedEditorItem, type StackedEditorState } from '../QueryEditorC
 
 interface UseStackedModeOrchestrationArgs {
   /**
-   * Card selection writer. Used by `enter` to promote a primary item into the selection and
-   * by `syncActiveItem` to mirror observer-driven activations back into selection state.
+   * Moves the active (editor) card without touching the bulk selection. Used by `enter` to pin the
+   * primary item to the top of the stack and by `syncActiveItem` to follow the scroll position \u2014
+   * both must preserve any multi-select checkboxes, since the stack is a layout choice, not a mode.
    */
-  onCardSelectionChange: (queryRefId: string | null, transformationId: string | null) => void;
+  activateItem: (queryRefId: string | null, transformationId: string | null) => void;
   selectedQueryRefIds: readonly string[];
   selectedTransformationIds: readonly string[];
   /**
-   * Cross-mode cleanup invoked on `enter` (e.g. clear alert selection, exit multi-select).
+   * Cross-mode cleanup invoked on `enter` (e.g. clear alert selection).
    * Captured via ref so callers can pass an inline function without re-creating `enter`.
    */
   onEnter?: () => void;
@@ -27,7 +28,7 @@ interface UseStackedModeOrchestrationArgs {
  * on its context. Callers that need to force-exit reach for `stackedMode.exit`.
  */
 export function useStackedModeOrchestration({
-  onCardSelectionChange,
+  activateItem,
   selectedQueryRefIds,
   selectedTransformationIds,
   onEnter,
@@ -45,18 +46,18 @@ export function useStackedModeOrchestration({
 
   const enter = useCallback(() => {
     onEnterRef.current?.();
-    // Prefer the most-recently-selected transformation as the primary card. Transformations are
-    // downstream of queries in the pipeline, so if both are selected the user is most likely
-    // working on the transformation step.
+    // Pin the most-recently-selected card to the top of the stack. Transformations are downstream
+    // of queries in the pipeline, so if both are selected the user is most likely working on the
+    // transformation step. Only the active card moves; any multi-select checkboxes stay put.
     const primaryTransformationId = selectedTransformationIdsRef.current.at(-1);
     const primaryQueryRefId = selectedQueryRefIdsRef.current.at(-1);
     if (primaryTransformationId) {
-      onCardSelectionChange(null, primaryTransformationId);
+      activateItem(null, primaryTransformationId);
     } else if (primaryQueryRefId) {
-      onCardSelectionChange(primaryQueryRefId, null);
+      activateItem(primaryQueryRefId, null);
     }
     setIsStackedMode(true);
-  }, [onCardSelectionChange]);
+  }, [activateItem]);
 
   const exit = useCallback(() => {
     setIsStackedMode(false);
@@ -65,12 +66,12 @@ export function useStackedModeOrchestration({
   const syncActiveItem = useCallback(
     (item: StackedEditorItem) => {
       if (item.type === QueryEditorType.Transformation) {
-        onCardSelectionChange(null, item.id);
+        activateItem(null, item.id);
       } else {
-        onCardSelectionChange(item.id, null);
+        activateItem(item.id, null);
       }
     },
-    [onCardSelectionChange]
+    [activateItem]
   );
 
   return useMemo<StackedEditorState>(
