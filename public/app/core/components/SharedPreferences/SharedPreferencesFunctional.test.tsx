@@ -172,7 +172,11 @@ describe('SharedPreferencesFunctional', () => {
     const capture = captureRequests();
     const { user } = await setup();
 
-    await selectComboboxOptionInTest(await screen.findByRole('combobox', { name: /Interface theme/ }), 'Green');
+    // Filter first — Combobox virtualizes options, so "Green" may not be mounted until typed.
+    const themeSelect = await screen.findByRole('combobox', { name: /Interface theme/ });
+    await user.click(themeSelect);
+    await user.keyboard('{Control>}a{/Control}Green');
+    await user.click(await screen.findByRole('option', { name: 'Green' }));
 
     await user.click(screen.getByText('Save preferences'));
 
