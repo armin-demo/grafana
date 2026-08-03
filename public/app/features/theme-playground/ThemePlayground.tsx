@@ -10,6 +10,7 @@ import deut_prot_dark from '@grafana/data/themes/definitions/deut_prot_dark.json
 import deut_prot_light from '@grafana/data/themes/definitions/deut_prot_light.json';
 import gildedgrove from '@grafana/data/themes/definitions/gildedgrove.json';
 import gloom from '@grafana/data/themes/definitions/gloom.json';
+import green from '@grafana/data/themes/definitions/green.json';
 import mars from '@grafana/data/themes/definitions/mars.json';
 import matrix from '@grafana/data/themes/definitions/matrix.json';
 import sapphiredusk from '@grafana/data/themes/definitions/sapphiredusk.json';
@@ -59,6 +60,7 @@ const experimentalDefinitions: Record<string, unknown> = {
   deut_prot_light,
   gildedgrove,
   gloom,
+  green,
   mars,
   matrix,
   sapphiredusk,
