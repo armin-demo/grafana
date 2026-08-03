@@ -20,7 +20,7 @@
       "text": "#6FCF97",
       "border": "#4CAF70",
       "name": "primary",
-      "shade": "#256B42",
+      "shade": "#4D9169",
       "transparent": "#2E7D4F26",
       "contrastText": "#E8F5E9",
       "borderTransparent": "#4CAF7040"
@@ -40,7 +40,7 @@
       "text": "#6FCF97",
       "border": "#4CAF70",
       "name": "accent",
-      "shade": "#2E7D4F",
+      "shade": "#5AAA77",
       "transparent": "#3D9B5F26",
       "contrastText": "#0B1410",
       "borderTransparent": "#4CAF7040"
