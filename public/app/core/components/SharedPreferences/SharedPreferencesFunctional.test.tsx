@@ -168,6 +168,27 @@ describe('SharedPreferencesFunctional', () => {
     });
   });
 
+  it('saves the green theme preference', async () => {
+    const capture = captureRequests();
+    const { user } = await setup();
+    const themeSelect = await screen.findByRole('combobox', { name: /Interface theme/ });
+
+    // Combobox virtualizes options; type to filter so Green is rendered.
+    await user.click(themeSelect);
+    await user.clear(themeSelect);
+    await user.type(themeSelect, 'Green', { skipClick: true });
+    await user.click(await screen.findByRole('option', { name: 'Green' }));
+
+    await user.click(screen.getByText('Save preferences'));
+
+    const requests = await capture;
+    const newPreferences = await getPrefsUpdateRequest(requests);
+
+    expect(newPreferences).toMatchObject({
+      spec: { theme: 'green' },
+    });
+  });
+
   it('saves the users default preferences', async () => {
     const capture = captureRequests();
     const { user } = await setup();
