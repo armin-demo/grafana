@@ -789,7 +789,15 @@ func TestIntegration_DeleteAlertRulesByUID(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, result, 3)
 
+		uids := make([]string, 0, len(result))
 		for _, rule := range result {
+			uids = append(uids, rule.UID)
+		}
+		rules, err := store.ListAlertRules(context.Background(), &models.ListAlertRulesQuery{OrgID: orgID, RuleUIDs: uids})
+		require.NoError(t, err)
+		require.Len(t, rules, 3)
+
+		for _, rule := range rules {
 			require.Equal(t, int64(1), rule.Version)
 			err = store.DeleteAlertRulesByUID(context.Background(), orgID, new(models.UserUID("test")), false, rule.UID)
 			require.NoError(t, err, "deleting newly-created rule %s should not hit unique constraint", rule.UID)
