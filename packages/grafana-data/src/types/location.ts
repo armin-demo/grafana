@@ -8,6 +8,7 @@ export interface GrafanaLocation<S = unknown> {
   pathname: string;
   search: string;
   hash: string;
-  state?: S;
+  /** Mirrors history@4 Location.state (required property; value may be undefined). */
+  state: S;
   key?: string;
 }
