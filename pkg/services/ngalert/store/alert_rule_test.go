@@ -879,6 +879,59 @@ func TestIntegration_DeleteAlertRulesByUID(t *testing.T) {
 			return nil
 		})
 	})
+
+	t.Run("should soft-delete multiple newly created version=1 rules without unique constraint conflict", func(t *testing.T) {
+		orgID := int64(rand.IntN(1000)) + 1
+		gen = gen.With(gen.WithOrgID(orgID))
+		b := &fakeBus{}
+		logger := log.New("test-dbstore")
+
+		cfg.UnifiedAlerting.DeletedRuleRetention = 1000 * time.Hour
+
+		store := createTestStore(sqlStore, folderService, logger, cfg.UnifiedAlerting, b)
+		store.FeatureToggles = featuremgmt.WithFeatures(featuremgmt.FlagAlertRuleRestore)
+
+		// Insert only — do not update — so every rule remains at version 1.
+		// Soft-delete clears rule_uid; colliding on (org_id, '', version) was the
+		// failure mode when the legacy unique index without rule_guid was present.
+		result, err := store.InsertAlertRules(context.Background(), &models.AlertingUserUID, toInsertRules(gen.GenerateMany(3)))
+		require.NoError(t, err)
+		uids := make([]string, 0, len(result))
+		guids := make([]string, 0, len(result))
+		for _, rule := range result {
+			uids = append(uids, rule.UID)
+			guids = append(guids, rule.GUID)
+		}
+
+		rules, err := store.ListAlertRules(context.Background(), &models.ListAlertRulesQuery{OrgID: orgID, RuleUIDs: uids})
+		require.NoError(t, err)
+		require.Len(t, rules, 3)
+		for _, rule := range rules {
+			require.Equal(t, int64(1), rule.Version)
+		}
+
+		err = store.DeleteAlertRulesByUID(context.Background(), orgID, new(models.UserUID("test")), false, uids...)
+		require.NoError(t, err)
+
+		// Sequential delete of another version=1 rule after prior soft-deletes.
+		result2, err := store.InsertAlertRules(context.Background(), &models.AlertingUserUID, toInsertRules(gen.GenerateMany(1)))
+		require.NoError(t, err)
+		err = store.DeleteAlertRulesByUID(context.Background(), orgID, new(models.UserUID("test")), false, result2[0].UID)
+		require.NoError(t, err)
+		guids = append(guids, result2[0].GUID)
+
+		_ = sqlStore.WithDbSession(context.Background(), func(sess *sqlstore.DBSession) error {
+			var versions []alertRuleVersion
+			err = sess.Table(alertRuleVersion{}).Where(`rule_uid = ''`).In("rule_guid", guids).Find(&versions)
+			require.NoError(t, err)
+			require.Len(t, versions, len(guids))
+			for _, version := range versions {
+				assert.Equal(t, "", version.RuleUID)
+				assert.Equal(t, int64(1), version.Version)
+			}
+			return nil
+		})
+	})
 }
 
 func TestIntegrationInsertAlertRules(t *testing.T) {

@@ -84,6 +84,8 @@ func (st DBstore) DeleteAlertRulesByUID(ctx context.Context, orgID int64, user *
 			for idx := range versions {
 				version := &versions[idx]
 				version.ID = 0
+				// Clear UID so recovery rows are not tied to a live rule UID (a new rule may reuse it).
+				// Uniqueness among soft-deleted rows is provided by rule_guid in the unique index.
 				version.RuleUID = ""
 				version.Created = TimeNow()
 				version.CreatedBy = nil
@@ -100,6 +102,21 @@ func (st DBstore) DeleteAlertRulesByUID(ctx context.Context, orgID int64, user *
 		logger.Debug("Deleted alert rule versions", "count", rows)
 
 		if len(versions) > 0 {
+			// Remove any prior soft-deleted copy of the same rule GUID so re-inserting
+			// (rule_guid, version) cannot collide after restore+delete cycles.
+			guids := make([]string, 0, len(versions))
+			for _, version := range versions {
+				if version.RuleGUID != "" {
+					guids = append(guids, version.RuleGUID)
+				}
+			}
+			if len(guids) > 0 {
+				_, err = sess.Table(alertRuleVersion{}).Where("rule_org_id = ? AND rule_uid = ''", orgID).In("rule_guid", guids).Delete(alertRule{})
+				if err != nil {
+					return fmt.Errorf("failed to clear prior deleted rule versions for recovery: %w", err)
+				}
+			}
+
 			_, err = sess.BulkInsert(alertRuleVersion{}, versions, sqlstore.NativeSettingsForDialect(st.SQLStore.GetDialect()))
 			if err != nil {
 				return fmt.Errorf("failed to persist deleted rule for recovery: %w", err)
