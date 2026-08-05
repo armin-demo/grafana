@@ -7,12 +7,12 @@ jest.mock('@grafana/runtime', () => ({
   ...jest.requireActual('@grafana/runtime'),
   locationService: {
     getLocation: jest.fn(),
-    getHistory: jest.fn(),
+    subscribe: jest.fn(),
   },
 }));
 
 const getLocationMock = jest.mocked(locationService.getLocation);
-const getHistoryMock = jest.mocked(locationService.getHistory);
+const subscribeMock = jest.mocked(locationService.subscribe);
 
 function setReferrer(value: string) {
   Object.defineProperty(document, 'referrer', { value, configurable: true });
@@ -30,12 +30,10 @@ describe('setupFaroPageMeta', () => {
     faro = { api: { setPage } } as unknown as Faro;
 
     getLocationMock.mockReturnValue({ pathname: '/search' } as ReturnType<typeof locationService.getLocation>);
-    getHistoryMock.mockReturnValue({
-      listen: (listener: (location: { pathname: string }) => void) => {
-        navigate = listener;
-        return () => {};
-      },
-    } as unknown as ReturnType<typeof locationService.getHistory>);
+    subscribeMock.mockImplementation((listener) => {
+      navigate = listener;
+      return () => {};
+    });
   });
 
   it('attaches referrer and omits previousUrl on the landing page', () => {
