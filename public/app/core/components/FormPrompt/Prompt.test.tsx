@@ -6,16 +6,16 @@ import { locationService } from '@grafana/runtime';
 import { Prompt } from './Prompt';
 
 const unblock = jest.fn();
-const blockNavigation = jest.fn(() => unblock);
-const subscribe = jest.fn(() => jest.fn());
+const blockNavigation = jest.fn().mockReturnValue(unblock);
+const subscribe = jest.fn().mockReturnValue(jest.fn());
 
 jest.mock('@grafana/runtime', () => ({
   ...jest.requireActual('@grafana/runtime'),
   locationService: {
     getLocation: jest.fn(),
     getHistory: jest.fn(),
-    blockNavigation: (...args: unknown[]) => blockNavigation(...args),
-    subscribe: (...args: unknown[]) => subscribe(...args),
+    blockNavigation: jest.fn(),
+    subscribe: jest.fn(),
     getLocationObservable: jest.fn(() => ({
       subscribe: () => ({ unsubscribe: jest.fn() }),
     })),
@@ -24,10 +24,14 @@ jest.mock('@grafana/runtime', () => ({
 
 describe('Prompt component', () => {
   beforeEach(() => {
+    (locationService.blockNavigation as jest.Mock).mockImplementation(blockNavigation);
+    (locationService.subscribe as jest.Mock).mockImplementation(subscribe);
+    (locationService.getLocation as jest.Mock).mockReturnValue({ pathname: '/current' } as GrafanaLocation);
     blockNavigation.mockClear();
     unblock.mockClear();
     subscribe.mockClear();
-    (locationService.getLocation as jest.Mock).mockReturnValue({ pathname: '/current' } as GrafanaLocation);
+    blockNavigation.mockReturnValue(unblock);
+    subscribe.mockReturnValue(jest.fn());
   });
 
   it('should call blockNavigation when `when` is true', () => {
