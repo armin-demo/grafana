@@ -1,27 +1,28 @@
-import type * as H from 'history';
 import { useEffect } from 'react';
 
+import { type GrafanaLocation } from '@grafana/data';
 import { locationService } from '@grafana/runtime';
 
 interface PromptProps {
   when?: boolean;
-  message: string | ((location: H.Location) => string | boolean);
+  message: string | ((location: GrafanaLocation) => string | boolean);
 }
 
+/**
+ * Blocks in-app navigations while `when` is true.
+ * Uses locationService.blockNavigation (history.block today; React Router blockers later).
+ */
 export const Prompt = ({ message, when = true }: PromptProps) => {
-  const history = locationService.getHistory();
-
   useEffect(() => {
     if (!when) {
       return undefined;
     }
-    //@ts-expect-error TODO Update the history package to fix types
-    const unblock = history.block(message);
 
+    const unblock = locationService.blockNavigation(message);
     return () => {
       unblock();
     };
-  }, [when, message, history]);
+  }, [when, message]);
 
   return null;
 };

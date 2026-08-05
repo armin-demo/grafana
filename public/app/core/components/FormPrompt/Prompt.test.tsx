@@ -1,57 +1,58 @@
-import { type History, type Location, createMemoryHistory } from 'history';
 import { render } from 'test/test-utils';
 
+import { type GrafanaLocation } from '@grafana/data';
 import { locationService } from '@grafana/runtime';
 
 import { Prompt } from './Prompt';
+
+const unblock = jest.fn();
+const blockNavigation = jest.fn().mockReturnValue(unblock);
+const subscribe = jest.fn().mockReturnValue(jest.fn());
 
 jest.mock('@grafana/runtime', () => ({
   ...jest.requireActual('@grafana/runtime'),
   locationService: {
     getLocation: jest.fn(),
     getHistory: jest.fn(),
+    blockNavigation: jest.fn(),
+    subscribe: jest.fn(),
+    getLocationObservable: jest.fn(() => ({
+      subscribe: () => ({ unsubscribe: jest.fn() }),
+    })),
   },
 }));
 
-describe('Prompt component with React Router', () => {
-  let mockHistory: History & { block: jest.Mock };
-
+describe('Prompt component', () => {
   beforeEach(() => {
-    const historyInstance = createMemoryHistory({ initialEntries: ['/current'] });
-    mockHistory = {
-      ...historyInstance,
-      block: jest.fn(() => jest.fn()),
-    };
-
-    (locationService.getLocation as jest.Mock).mockReturnValue({ pathname: '/current' } as Location);
-    (locationService.getHistory as jest.Mock).mockReturnValue(mockHistory);
+    (locationService.blockNavigation as jest.Mock).mockImplementation(blockNavigation);
+    (locationService.subscribe as jest.Mock).mockImplementation(subscribe);
+    (locationService.getLocation as jest.Mock).mockReturnValue({ pathname: '/current' } as GrafanaLocation);
+    blockNavigation.mockClear();
+    unblock.mockClear();
+    subscribe.mockClear();
+    blockNavigation.mockReturnValue(unblock);
+    subscribe.mockReturnValue(jest.fn());
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('should call the block function when `when` is true', () => {
+  it('should call blockNavigation when `when` is true', () => {
     const { unmount } = render(<Prompt when={true} message="Are you sure you want to leave?" />);
 
+    expect(blockNavigation).toHaveBeenCalledWith('Are you sure you want to leave?');
     unmount();
-    expect(mockHistory.block).toHaveBeenCalled();
+    expect(unblock).toHaveBeenCalled();
   });
 
-  it('should not call the block function when `when` is false', () => {
+  it('should not call blockNavigation when `when` is false', () => {
     const { unmount } = render(<Prompt when={false} message="Are you sure you want to leave?" />);
 
     unmount();
-    expect(mockHistory.block).not.toHaveBeenCalled();
+    expect(blockNavigation).not.toHaveBeenCalled();
   });
 
-  it('should use the message function if provided', async () => {
+  it('should pass the message function to blockNavigation', () => {
     const messageFn = jest.fn().mockReturnValue('Custom message');
     render(<Prompt when={true} message={messageFn} />);
 
-    const callback = mockHistory.block.mock.calls[0][0];
-    callback({ pathname: '/new-path' } as Location);
-
-    expect(messageFn).toHaveBeenCalledWith(expect.objectContaining({ pathname: '/new-path' }));
+    expect(blockNavigation).toHaveBeenCalledWith(messageFn);
   });
 });

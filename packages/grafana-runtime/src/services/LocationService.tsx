@@ -1,8 +1,16 @@
 import * as H from 'history';
 import React, { useContext } from 'react';
-import { BehaviorSubject, type Observable } from 'rxjs';
+import { BehaviorSubject, type Observable, type Subscription } from 'rxjs';
+import { skip } from 'rxjs/operators';
 
-import { deprecationWarning, type UrlQueryMap, urlUtil } from '@grafana/data';
+import {
+  deprecationWarning,
+  type GrafanaLocation,
+  type GrafanaLocationDescriptor,
+  type GrafanaLocationDescriptorObject,
+  type UrlQueryMap,
+  urlUtil,
+} from '@grafana/data';
 import { attachDebugger, createLogger } from '@grafana/ui';
 
 import { config } from '../config';
@@ -10,19 +18,45 @@ import { config } from '../config';
 import { type LocationUpdate } from './LocationSrv';
 
 /**
+ * Callback used to decide whether a navigation should be blocked.
+ * Return `false` or a string to block; `true` to allow.
+ *
+ * @public
+ */
+export type NavigationBlockCallback = (
+  location: GrafanaLocation,
+  action: 'PUSH' | 'REPLACE' | 'POP'
+) => string | boolean;
+
+/**
  * @public
  * A wrapper to help work with browser location and history
  */
 export interface LocationService {
   partial: (query: Record<string, any>, replace?: boolean) => void;
-  push: (location: H.Path | H.LocationDescriptor<any>) => void;
-  replace: (location: H.Path | H.LocationDescriptor<any>) => void;
+  push: (location: GrafanaLocationDescriptor) => void;
+  replace: (location: GrafanaLocationDescriptor) => void;
   reload: () => void;
-  getLocation: () => H.Location;
+  getLocation: () => GrafanaLocation;
+  /**
+   * @deprecated Prefer `getLocation`, `subscribe`, `getLocationObservable`, and `blockNavigation`.
+   * Direct history access will be removed when Grafana migrates off history@4 onto React Router navigation APIs.
+   */
   getHistory: () => H.History;
   getSearch: () => URLSearchParams;
   getSearchObject: () => UrlQueryMap;
-  getLocationObservable: () => Observable<H.Location>;
+  getLocationObservable: () => Observable<GrafanaLocation>;
+  /**
+   * Subscribe to location changes without depending on the history package.
+   * Returns an unsubscribe function.
+   */
+  subscribe: (listener: (location: GrafanaLocation) => void) => () => void;
+  /**
+   * Block navigations while the returned unblock function has not been called.
+   * Prefer `FormPrompt` / `Prompt` for UI. This wraps history.block today and will
+   * move to React Router blockers once a data router is adopted.
+   */
+  blockNavigation: (prompt: boolean | string | NavigationBlockCallback) => () => void;
 
   /**
    * This is from the old LocationSrv interface
@@ -33,7 +67,7 @@ export interface LocationService {
 /** @internal */
 export class HistoryWrapper implements LocationService {
   private readonly history: H.History;
-  private locationObservable: BehaviorSubject<H.Location>;
+  private locationObservable: BehaviorSubject<GrafanaLocation>;
 
   constructor(history?: H.History) {
     // If no history passed create an in memory one if being called from test
@@ -43,10 +77,10 @@ export class HistoryWrapper implements LocationService {
         ? H.createMemoryHistory({ initialEntries: ['/'] })
         : H.createBrowserHistory({ basename: config.appSubUrl ?? '/' }));
 
-    this.locationObservable = new BehaviorSubject(this.history.location);
+    this.locationObservable = new BehaviorSubject(this.history.location as GrafanaLocation);
 
     this.history.listen((location) => {
-      this.locationObservable.next(location);
+      this.locationObservable.next(location as GrafanaLocation);
     });
 
     this.partial = this.partial.bind(this);
@@ -55,12 +89,29 @@ export class HistoryWrapper implements LocationService {
     this.getSearch = this.getSearch.bind(this);
     this.getHistory = this.getHistory.bind(this);
     this.getLocation = this.getLocation.bind(this);
+    this.subscribe = this.subscribe.bind(this);
+    this.blockNavigation = this.blockNavigation.bind(this);
   }
 
   getLocationObservable() {
     return this.locationObservable.asObservable();
   }
 
+  subscribe(listener: (location: GrafanaLocation) => void) {
+    // Match history.listen semantics: only future changes, not the current location.
+    const subscription: Subscription = this.locationObservable.pipe(skip(1)).subscribe(listener);
+    return () => subscription.unsubscribe();
+  }
+
+  blockNavigation(prompt: boolean | string | NavigationBlockCallback) {
+    // history@4 block typing is incomplete; keep the adapter here so call sites stay history-free.
+    // @ts-expect-error history@4 block callback types omit action in some typings
+    return this.history.block(prompt);
+  }
+
+  /**
+   * @deprecated Prefer `getLocation`, `subscribe`, `getLocationObservable`, and `blockNavigation`.
+   */
   getHistory() {
     return this.history;
   }
@@ -91,12 +142,12 @@ export class HistoryWrapper implements LocationService {
     }
   }
 
-  push(location: H.Path | H.LocationDescriptor) {
-    this.history.push(location);
+  push(location: GrafanaLocationDescriptor) {
+    this.history.push(location as H.Path | H.LocationDescriptor);
   }
 
-  replace(location: H.Path | H.LocationDescriptor) {
-    this.history.replace(location);
+  replace(location: GrafanaLocationDescriptor) {
+    this.history.replace(location as H.Path | H.LocationDescriptor);
   }
 
   reload() {
@@ -108,7 +159,7 @@ export class HistoryWrapper implements LocationService {
   }
 
   getLocation() {
-    return this.history.location;
+    return this.history.location as GrafanaLocation;
   }
 
   getSearchObject() {
@@ -121,7 +172,7 @@ export class HistoryWrapper implements LocationService {
     if (options.partial && options.query) {
       this.partial(options.query, options.partial);
     } else {
-      const newLocation: H.LocationDescriptor = {
+      const newLocation: GrafanaLocationDescriptorObject = {
         pathname: options.path,
       };
       if (options.query) {

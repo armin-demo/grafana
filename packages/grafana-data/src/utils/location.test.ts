@@ -1,6 +1,5 @@
-import { type Location } from 'history';
-
 import { type GrafanaConfig } from '../types/config';
+import { type GrafanaLocation } from '../types/location';
 
 import { locationUtil } from './location';
 
@@ -139,7 +138,7 @@ describe('locationUtil', () => {
   });
 
   describe('getUrlForPartial', () => {
-    const mockLocation: Location = {
+    const mockLocation: GrafanaLocation = {
       hash: '',
       pathname: '/',
       search: '',
@@ -247,7 +246,7 @@ describe('locationUtil', () => {
   });
 
   describe('processRedirectUri', () => {
-    const mockLocation: Location = {
+    const mockLocation: GrafanaLocation = {
       hash: '',
       pathname: '/',
       search: '',

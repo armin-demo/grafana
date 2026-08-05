@@ -1,8 +1,7 @@
-import { type Location } from 'history';
-
 import { textUtil } from '../text/sanitize';
 import { type ScopedVars } from '../types/ScopedVars';
 import { type GrafanaConfig } from '../types/config';
+import { type GrafanaLocation } from '../types/location';
 import { type RawTimeRange } from '../types/time';
 
 import { type UrlQueryMap, urlUtil } from './url';
@@ -71,7 +70,7 @@ const assureBaseUrl = (url: string): string => {
  * @param searchParamsToUpdate
  * @returns
  */
-const getUrlForPartial = (location: Location, searchParamsToUpdate: UrlQueryMap) => {
+const getUrlForPartial = (location: GrafanaLocation, searchParamsToUpdate: UrlQueryMap) => {
   const searchParams = urlUtil.parseKeyValue(
     location.search.startsWith('?') ? location.search.substring(1) : location.search
   );
@@ -156,7 +155,7 @@ export const locationUtil = {
    * @returns Final URL with merged query parameters
    * @internal
    */
-  processRedirectUri: (redirectUri: string, currentLocation: Location): string => {
+  processRedirectUri: (redirectUri: string, currentLocation: GrafanaLocation): string => {
     try {
       const redirectUrl = new URL(redirectUri, window.location.origin);
       const redirectParams = new Set(redirectUrl.searchParams.keys());

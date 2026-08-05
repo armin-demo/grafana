@@ -1,4 +1,4 @@
-import { type Location } from 'history';
+import { type GrafanaLocation } from '@grafana/data';
 
 import { locationService, setBackendSrv, type BackendSrv } from '@grafana/runtime';
 import { playlistSrv } from 'app/features/playlist/PlaylistSrv';
@@ -70,7 +70,7 @@ describe('NewFrontendAssetsChecker', () => {
 });
 
 class NewFrontendAssetsCheckerExposedLocationUpdate extends NewFrontendAssetsChecker {
-  public doLocationUpdated(location: Location) {
+  public doLocationUpdated(location: GrafanaLocation) {
     this.locationUpdated(location);
   }
 }
