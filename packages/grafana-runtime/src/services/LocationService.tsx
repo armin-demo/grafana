@@ -1,8 +1,9 @@
 import * as H from 'history';
 import React, { useContext } from 'react';
 import { BehaviorSubject, type Observable } from 'rxjs';
+import { skip } from 'rxjs/operators';
 
-import { deprecationWarning, type UrlQueryMap, urlUtil } from '@grafana/data';
+import { deprecationWarning, type GrafanaLocation, type UrlQueryMap, urlUtil } from '@grafana/data';
 import { attachDebugger, createLogger } from '@grafana/ui';
 
 import { config } from '../config';
@@ -18,11 +19,20 @@ export interface LocationService {
   push: (location: H.Path | H.LocationDescriptor<any>) => void;
   replace: (location: H.Path | H.LocationDescriptor<any>) => void;
   reload: () => void;
-  getLocation: () => H.Location;
+  getLocation: () => GrafanaLocation;
+  /**
+   * @deprecated Prefer `subscribe`, `getLocation`, or `getLocationObservable`.
+   * Direct history access couples callers to the abandoned history@4 package.
+   */
   getHistory: () => H.History;
   getSearch: () => URLSearchParams;
   getSearchObject: () => UrlQueryMap;
-  getLocationObservable: () => Observable<H.Location>;
+  getLocationObservable: () => Observable<GrafanaLocation>;
+  /**
+   * Subscribe to location changes. Returns an unsubscribe function.
+   * Prefer this over `getHistory().listen()` so callers do not depend on history@4.
+   */
+  subscribe: (callback: (location: GrafanaLocation) => void) => () => void;
 
   /**
    * This is from the old LocationSrv interface
@@ -33,7 +43,7 @@ export interface LocationService {
 /** @internal */
 export class HistoryWrapper implements LocationService {
   private readonly history: H.History;
-  private locationObservable: BehaviorSubject<H.Location>;
+  private locationObservable: BehaviorSubject<GrafanaLocation>;
 
   constructor(history?: H.History) {
     // If no history passed create an in memory one if being called from test
@@ -43,10 +53,10 @@ export class HistoryWrapper implements LocationService {
         ? H.createMemoryHistory({ initialEntries: ['/'] })
         : H.createBrowserHistory({ basename: config.appSubUrl ?? '/' }));
 
-    this.locationObservable = new BehaviorSubject(this.history.location);
+    this.locationObservable = new BehaviorSubject(this.toGrafanaLocation(this.history.location));
 
     this.history.listen((location) => {
-      this.locationObservable.next(location);
+      this.locationObservable.next(this.toGrafanaLocation(location));
     });
 
     this.partial = this.partial.bind(this);
@@ -55,10 +65,28 @@ export class HistoryWrapper implements LocationService {
     this.getSearch = this.getSearch.bind(this);
     this.getHistory = this.getHistory.bind(this);
     this.getLocation = this.getLocation.bind(this);
+    this.subscribe = this.subscribe.bind(this);
+  }
+
+  private toGrafanaLocation(location: H.Location): GrafanaLocation {
+    return {
+      pathname: location.pathname,
+      search: location.search,
+      hash: location.hash,
+      state: location.state,
+      key: location.key,
+    };
   }
 
   getLocationObservable() {
     return this.locationObservable.asObservable();
+  }
+
+  subscribe(callback: (location: GrafanaLocation) => void) {
+    // BehaviorSubject replays the current value; history.listen does not. Skip the replay
+    // so callers only receive subsequent navigations.
+    const subscription = this.locationObservable.pipe(skip(1)).subscribe(callback);
+    return () => subscription.unsubscribe();
   }
 
   getHistory() {
@@ -108,7 +136,7 @@ export class HistoryWrapper implements LocationService {
   }
 
   getLocation() {
-    return this.history.location;
+    return this.toGrafanaLocation(this.history.location);
   }
 
   getSearchObject() {
