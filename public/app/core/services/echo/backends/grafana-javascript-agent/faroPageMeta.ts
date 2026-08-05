@@ -39,7 +39,7 @@ export function setupFaroPageMeta(faro: Faro): void {
   updatePageMeta();
 
   // Subsequent internal navigations within the SPA.
-  locationService.getHistory().listen((location) => {
+  locationService.subscribe((location) => {
     // Only a pathname change means the user actually left the page. Query-param-only navigations
     // (time range, variables) keep the same pathname; advancing previousUrl on those would make it
     // point at the current page instead of the one the user came from.

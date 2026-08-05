@@ -1,7 +1,6 @@
-import { type Location } from 'history';
 import { pickBy } from 'lodash';
 
-import { locationUtil, urlUtil, rangeUtil } from '@grafana/data';
+import { type GrafanaLocation, locationUtil, urlUtil, rangeUtil } from '@grafana/data';
 import { locationService } from '@grafana/runtime';
 import { StateManagerBase } from 'app/core/services/StateManagerBase';
 
@@ -56,7 +55,7 @@ export class PlaylistSrv extends StateManagerBase<PlaylistSrvState> {
     // history entry to support the back button
     // When starting the playlist from the playlist modal, we want to push a new history entry
     if (replaceHistoryEntry) {
-      locationService.getHistory().replace(urlWithParams);
+      locationService.replace(urlWithParams);
     } else {
       locationService.push(urlWithParams);
     }
@@ -87,7 +86,7 @@ export class PlaylistSrv extends StateManagerBase<PlaylistSrvState> {
   }
 
   // Detect url changes not caused by playlist srv and stop playlist
-  locationUpdated(location: Location) {
+  locationUpdated(location: GrafanaLocation) {
     if (location.pathname !== this.validPlaylistUrl) {
       this.stop();
     }
@@ -102,7 +101,7 @@ export class PlaylistSrv extends StateManagerBase<PlaylistSrvState> {
     this.setState({ isPlaying: true });
 
     // setup location tracking
-    this.locationListenerUnsub = locationService.getHistory().listen(this.locationUpdated);
+    this.locationListenerUnsub = locationService.subscribe(this.locationUpdated);
     const urls: string[] = [];
 
     if (!playlist.spec?.items?.length) {

@@ -221,6 +221,11 @@ export {
 } from './utils/OptionsUIBuilders';
 export { getFlotPairs, getFlotPairsConstant } from './utils/flotPairs';
 export { locationUtil } from './utils/location';
+export {
+  type GrafanaLocation,
+  type GrafanaLocationDescriptor,
+  type GrafanaLocationDescriptorObject,
+} from './types/location';
 export { urlUtil, type UrlQueryMap, type UrlQueryValue, serializeStateToUrlParam, toURLRange } from './utils/url';
 export { DataLinkBuiltInVars, mapInternalLinkToExplore } from './utils/dataLinks';
 export { DocsId } from './utils/docs';

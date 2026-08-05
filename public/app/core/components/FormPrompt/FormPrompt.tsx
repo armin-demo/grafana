@@ -1,8 +1,8 @@
 import { css } from '@emotion/css';
-import type history from 'history';
 import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom-v5-compat';
 
+import { type GrafanaLocation } from '@grafana/data';
 import { Trans, t } from '@grafana/i18n';
 import { Button, Modal } from '@grafana/ui';
 
@@ -14,7 +14,7 @@ export interface Props {
   /** Extra check to invoke when location changes.
    * Could be useful in multistep forms where each step has a separate URL
    */
-  onLocationChange?: (location: history.Location) => void;
+  onLocationChange?: (location: GrafanaLocation) => void;
 }
 
 /**
@@ -24,7 +24,7 @@ export interface Props {
  */
 export const FormPrompt = ({ confirmRedirect, onDiscard, onLocationChange }: Props) => {
   const [modalIsOpen, setModalIsOpen] = useState(false);
-  const [blockedLocation, setBlockedLocation] = useState<history.Location | null>(null);
+  const [blockedLocation, setBlockedLocation] = useState<GrafanaLocation | null>(null);
   const [changesDiscarded, setChangesDiscarded] = useState(false);
 
   useEffect(() => {
@@ -41,7 +41,7 @@ export const FormPrompt = ({ confirmRedirect, onDiscard, onLocationChange }: Pro
   }, [confirmRedirect]);
 
   // Returning 'false' from this function will prevent navigation to the next URL
-  const handleRedirect = (location: history.Location) => {
+  const handleRedirect = (location: GrafanaLocation) => {
     // Do not show the unsaved changes modal if only the URL params have changed
     const currentPath = window.location.pathname;
     const nextPath = location.pathname;

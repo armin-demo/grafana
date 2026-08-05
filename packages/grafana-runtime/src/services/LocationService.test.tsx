@@ -3,6 +3,39 @@ import { renderHook } from '@testing-library/react';
 import { locationService, HistoryWrapper, useLocationService, LocationServiceProvider } from './LocationService';
 
 describe('LocationService', () => {
+  describe('subscribe', () => {
+    it('notifies listeners on location changes and supports unsubscribe', () => {
+      const service = new HistoryWrapper();
+      const listener = jest.fn();
+      const unsubscribe = service.subscribe(listener);
+
+      // Does not emit the current location (matches history.listen)
+      expect(listener).not.toHaveBeenCalled();
+
+      service.push('/subscribed');
+      expect(listener).toHaveBeenCalledTimes(1);
+      expect(listener).toHaveBeenCalledWith(expect.objectContaining({ pathname: '/subscribed' }));
+
+      unsubscribe();
+      service.push('/after-unsub');
+      expect(listener).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('blockNavigation', () => {
+    it('blocks navigation until unblocked', () => {
+      const service = new HistoryWrapper();
+      const unblock = service.blockNavigation(() => false);
+
+      service.push('/blocked');
+      expect(service.getLocation().pathname).toBe('/');
+
+      unblock();
+      service.push('/allowed');
+      expect(service.getLocation().pathname).toBe('/allowed');
+    });
+  });
+
   describe('getSearchObject', () => {
     it('returns query string as object', () => {
       locationService.push('/test?query1=false&query2=123&query3=text');
