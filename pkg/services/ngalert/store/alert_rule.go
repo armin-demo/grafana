@@ -81,16 +81,19 @@ func (st DBstore) DeleteAlertRulesByUID(ctx context.Context, orgID int64, user *
 			if err != nil {
 				logger.Error("Failed to get latest version of deleted alert rules. The recovery will not be possible", "error", err)
 			}
-			for idx := range versions {
-				version := &versions[idx]
-				version.ID = 0
-				version.RuleUID = ""
-				version.Created = TimeNow()
-				version.CreatedBy = nil
-				if user != nil {
-					version.CreatedBy = new(string(*user))
-				}
+		for idx := range versions {
+			version := &versions[idx]
+			version.ID = 0
+			// Use RuleGUID as RuleUID so soft-deleted rows stay unique under
+			// (rule_org_id, rule_uid, version). Empty RuleUID collided when
+			// multiple newly-created rules (typically version=1) were deleted.
+			version.RuleUID = version.RuleGUID
+			version.Created = TimeNow()
+			version.CreatedBy = nil
+			if user != nil {
+				version.CreatedBy = new(string(*user))
 			}
+		}
 		}
 
 		rows, err = sess.Table(alertRuleVersion{}).Where("rule_org_id = ?", orgID).In("rule_uid", ruleUID).Delete(alertRule{})
@@ -329,8 +332,9 @@ func (st DBstore) GetAlertRuleVersionFolders(ctx context.Context, orgID int64, g
 func (st DBstore) ListDeletedRules(ctx context.Context, orgID int64) ([]*ngmodels.AlertRule, error) {
 	alertRules := make([]*ngmodels.AlertRule, 0)
 	err := st.SQLStore.WithDbSession(ctx, func(sess *db.Session) error {
-		// take only the latest versions of each rule by GUID
-		rows, err := sess.Table(alertRuleVersion{}).Where("rule_org_id = ? AND rule_uid = ''", orgID).Desc("created", "id").Rows(alertRuleVersion{})
+		// Soft-deleted recovery rows use rule_uid = rule_guid. Also accept legacy
+		// rule_uid = '' rows written before that marker change.
+		rows, err := sess.Table(alertRuleVersion{}).Where("rule_org_id = ? AND (rule_uid = rule_guid OR rule_uid = '')", orgID).Desc("created", "id").Rows(alertRuleVersion{})
 		if err != nil {
 			return err
 		}
@@ -348,6 +352,8 @@ func (st DBstore) ListDeletedRules(ctx context.Context, orgID int64) ([]*ngmodel
 				st.Logger.Error("Invalid rule found in DB store, cannot convert, ignoring it", "func", "GetAlertRuleVersions", "error", err, "version_id", rule.ID)
 				continue
 			}
+			// Clear UID so restore assigns a new rule UID (DB marker may store GUID in rule_uid).
+			converted.UID = ""
 			alertRules = append(alertRules, &converted)
 		}
 		return nil
@@ -2060,7 +2066,7 @@ func (st DBstore) CleanUpDeletedAlertRules(ctx context.Context) (int64, error) {
 	err := st.SQLStore.WithTransactionalDbSession(ctx, func(sess *sqlstore.DBSession) error {
 		expire := TimeNow().Add(-st.Cfg.DeletedRuleRetention)
 		st.Logger.Debug("Permanently remove expired deleted rules", "deletedBefore", expire)
-		result, err := sess.Exec("DELETE FROM alert_rule_version WHERE rule_uid='' AND created <= ?", expire)
+		result, err := sess.Exec("DELETE FROM alert_rule_version WHERE (rule_uid = rule_guid OR rule_uid = '') AND created <= ?", expire)
 		if err != nil {
 			return err
 		}
@@ -2088,7 +2094,7 @@ func (st DBstore) DeleteRuleFromTrashByGUID(ctx context.Context, orgID int64, ru
 	affectedRows := int64(-1)
 	err := st.SQLStore.WithTransactionalDbSession(ctx, func(sess *sqlstore.DBSession) error {
 		st.Logger.FromContext(ctx).Debug("Deleting a deleted rule by GUID", "ruleGUID", ruleGUID)
-		result, err := sess.Exec("DELETE FROM alert_rule_version WHERE rule_uid='' AND rule_org_id = ? AND rule_guid = ? ", orgID, ruleGUID)
+		result, err := sess.Exec("DELETE FROM alert_rule_version WHERE (rule_uid = rule_guid OR rule_uid = '') AND rule_org_id = ? AND rule_guid = ? ", orgID, ruleGUID)
 		if err != nil {
 			return err
 		}
