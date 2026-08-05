@@ -707,7 +707,7 @@ func TestIntegration_DeleteAlertRulesByUID(t *testing.T) {
 		require.Empty(t, savedInstances)
 	})
 
-	t.Run("should remove all version and insert one with empty rule_uid when DeletedRuleRetention is set", func(t *testing.T) {
+	t.Run("should remove all version and insert one with rule_uid=rule_guid when DeletedRuleRetention is set", func(t *testing.T) {
 		orgID := int64(rand.IntN(1000)) + 1
 		gen = gen.With(gen.WithOrgID(orgID))
 		// Create a new store to pass the custom bus to check the signal
@@ -753,12 +753,12 @@ func TestIntegration_DeleteAlertRulesByUID(t *testing.T) {
 
 		_ = sqlStore.WithDbSession(context.Background(), func(sess *sqlstore.DBSession) error {
 			var versions []alertRuleVersion
-			err = sess.Table(alertRuleVersion{}).Where(`rule_uid = ''`).In("rule_guid", guids).Find(&versions)
+			err = sess.Table(alertRuleVersion{}).Where(`rule_uid = rule_guid`).In("rule_guid", guids).Find(&versions)
 			require.NoError(t, err)
 			require.Len(t, versions, len(rules)) // should be one version per GUID
 
 			for _, version := range versions {
-				assert.Equal(t, "", version.RuleUID)
+				assert.Equal(t, version.RuleGUID, version.RuleUID)
 				assert.Equal(t, "test", *version.CreatedBy)
 				// Remove the GUID from guids
 				for i, guid := range guids {
@@ -772,6 +772,35 @@ func TestIntegration_DeleteAlertRulesByUID(t *testing.T) {
 			assert.Empty(t, guids, "Some rules are left unrecoverable")
 			return nil
 		})
+	})
+
+	t.Run("should allow deleting multiple newly-created version-1 rules sequentially", func(t *testing.T) {
+		orgID := int64(rand.IntN(1000)) + 1
+		gen = gen.With(gen.WithOrgID(orgID))
+		b := &fakeBus{}
+		logger := log.New("test-dbstore")
+
+		cfg.UnifiedAlerting.DeletedRuleRetention = 1000 * time.Hour
+
+		store := createTestStore(sqlStore, folderService, logger, cfg.UnifiedAlerting, b)
+		store.FeatureToggles = featuremgmt.WithFeatures(featuremgmt.FlagAlertRuleRestore)
+
+		result, err := store.InsertAlertRules(context.Background(), &models.AlertingUserUID, toInsertRules(gen.GenerateMany(3)))
+		require.NoError(t, err)
+		require.Len(t, result, 3)
+
+		for _, rule := range result {
+			err = store.DeleteAlertRulesByUID(context.Background(), orgID, new(models.UserUID("test")), false, rule.UID)
+			require.NoError(t, err, "deleting newly-created rule %s should not hit unique constraint", rule.UID)
+		}
+
+		deleted, err := store.ListDeletedRules(context.Background(), orgID)
+		require.NoError(t, err)
+		require.Len(t, deleted, 3)
+		for _, rule := range deleted {
+			assert.Empty(t, rule.UID)
+			assert.NotEmpty(t, rule.GUID)
+		}
 	})
 
 	t.Run("should remove all versions and not keep history if DeletedRuleRetention = 0", func(t *testing.T) {
