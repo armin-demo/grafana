@@ -6,6 +6,7 @@ import {
   type FieldConfig,
   type FieldConfigSource,
   filterFieldConfigOverrides,
+  type GrafanaLocation,
   isStandardFieldProp,
   locationUtil,
   type NavIndex,
@@ -170,7 +171,7 @@ export class DashboardScene extends SceneObjectBase<DashboardSceneState> impleme
   /**
    * Url state before editing started
    */
-  private _initialUrlState?: H.Location;
+  private _initialUrlState?: GrafanaLocation;
   /**
    * Dashboard changes tracker
    */

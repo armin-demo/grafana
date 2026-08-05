@@ -1,6 +1,6 @@
-import { type Location } from 'history';
 import { isEqual } from 'lodash';
 
+import { type GrafanaLocation } from '@grafana/data';
 import { getBackendSrv, getGrafanaLiveSrv, locationService, reportInteraction } from '@grafana/runtime';
 import { playlistSrv } from 'app/features/playlist/PlaylistSrv';
 
@@ -29,14 +29,14 @@ export class NewFrontendAssetsChecker {
     }
 
     // Subscribe to location changes
-    locationService.getHistory().listen(this.locationUpdated.bind(this));
+    locationService.subscribe(this.locationUpdated.bind(this));
     this.prevLocationPath = locationService.getLocation().pathname;
   }
 
   /**
    * Tries to detect some navigation events where it's safe to trigger a reload
    */
-  protected locationUpdated(location: Location) {
+  protected locationUpdated(location: GrafanaLocation) {
     if (this.prevLocationPath === location.pathname) {
       return;
     }

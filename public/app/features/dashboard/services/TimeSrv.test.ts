@@ -1,7 +1,6 @@
-import type * as H from 'history';
 import { ContextSrvStub } from 'test/specs/helpers';
 
-import { dateTime, isDateTime } from '@grafana/data';
+import { dateTime, type GrafanaLocation, isDateTime } from '@grafana/data';
 import { config, HistoryWrapper, locationService, setLocationService } from '@grafana/runtime';
 import { EmbeddedScene, SceneCanvasText, SceneTimeRange } from '@grafana/scenes';
 
@@ -18,7 +17,7 @@ jest.mock('app/core/app_events', () => ({
 describe('timeSrv', () => {
   let timeSrv: TimeSrv;
   let _dashboard: TimeModel;
-  let locationUpdates: H.Location[] = [];
+  let locationUpdates: GrafanaLocation[] = [];
 
   beforeEach(() => {
     _dashboard = {
@@ -34,7 +33,7 @@ describe('timeSrv', () => {
 
     locationUpdates = [];
     const history = new HistoryWrapper();
-    history.getHistory().listen((x) => locationUpdates.push(x));
+    history.subscribe((x) => locationUpdates.push(x));
     setLocationService(history);
   });
 

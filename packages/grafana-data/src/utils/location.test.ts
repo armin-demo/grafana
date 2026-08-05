@@ -1,6 +1,5 @@
-import { type Location } from 'history';
-
 import { type GrafanaConfig } from '../types/config';
+import { type GrafanaLocation } from '../types/location';
 
 import { locationUtil } from './location';
 
@@ -139,7 +138,7 @@ describe('locationUtil', () => {
   });
 
   describe('getUrlForPartial', () => {
-    const mockLocation: Location = {
+    const mockGrafanaLocation: GrafanaLocation = {
       hash: '',
       pathname: '/',
       search: '',
@@ -157,14 +156,14 @@ describe('locationUtil', () => {
       });
 
       it('can add params', () => {
-        expect(locationUtil.getUrlForPartial(mockLocation, { forceLogin: 'true' })).toEqual('/?forceLogin=true');
+        expect(locationUtil.getUrlForPartial(mockGrafanaLocation, { forceLogin: 'true' })).toEqual('/?forceLogin=true');
       });
 
       it('can remove params using undefined', () => {
         expect(
           locationUtil.getUrlForPartial(
             {
-              ...mockLocation,
+              ...mockGrafanaLocation,
               search: '?a=1',
             },
             { a: undefined }
@@ -176,7 +175,7 @@ describe('locationUtil', () => {
         expect(
           locationUtil.getUrlForPartial(
             {
-              ...mockLocation,
+              ...mockGrafanaLocation,
               search: '?a=1',
             },
             { a: null }
@@ -197,7 +196,7 @@ describe('locationUtil', () => {
       });
 
       it('can add params', () => {
-        expect(locationUtil.getUrlForPartial(mockLocation, { forceLogin: 'true' })).toEqual(
+        expect(locationUtil.getUrlForPartial(mockGrafanaLocation, { forceLogin: 'true' })).toEqual(
           '/subpath/?forceLogin=true'
         );
       });
@@ -206,7 +205,7 @@ describe('locationUtil', () => {
         expect(
           locationUtil.getUrlForPartial(
             {
-              ...mockLocation,
+              ...mockGrafanaLocation,
               search: '?a=1',
             },
             { a: undefined }
@@ -218,7 +217,7 @@ describe('locationUtil', () => {
         expect(
           locationUtil.getUrlForPartial(
             {
-              ...mockLocation,
+              ...mockGrafanaLocation,
               search: '?a=1',
             },
             { a: null }
@@ -247,7 +246,7 @@ describe('locationUtil', () => {
   });
 
   describe('processRedirectUri', () => {
-    const mockLocation: Location = {
+    const mockGrafanaLocation: GrafanaLocation = {
       hash: '',
       pathname: '/',
       search: '',
@@ -264,57 +263,57 @@ describe('locationUtil', () => {
 
     test('merges current params with redirect URI params', () => {
       const redirectUri = '/a/custom-home-plugin?tab=recent';
-      const currentLocation = { ...mockLocation, search: '?doc=some-query-value' };
-      const result = locationUtil.processRedirectUri(redirectUri, currentLocation);
+      const currentGrafanaLocation = { ...mockGrafanaLocation, search: '?doc=some-query-value' };
+      const result = locationUtil.processRedirectUri(redirectUri, currentGrafanaLocation);
       expect(result).toBe('/a/custom-home-plugin?tab=recent&doc=some-query-value');
     });
 
     test('redirect URI params take precedence over current params', () => {
       const redirectUri = '/d/home-dashboard?from=now-1h';
-      const currentLocation = { ...mockLocation, search: '?from=now-6h&to=now' };
-      const result = locationUtil.processRedirectUri(redirectUri, currentLocation);
+      const currentGrafanaLocation = { ...mockGrafanaLocation, search: '?from=now-6h&to=now' };
+      const result = locationUtil.processRedirectUri(redirectUri, currentGrafanaLocation);
       expect(result).toBe('/d/home-dashboard?from=now-1h&to=now');
     });
 
     test('handles redirect URI without query params', () => {
       const redirectUri = '/d/home-dashboard';
-      const currentLocation = { ...mockLocation, search: '?from=now-6h&to=now' };
-      const result = locationUtil.processRedirectUri(redirectUri, currentLocation);
+      const currentGrafanaLocation = { ...mockGrafanaLocation, search: '?from=now-6h&to=now' };
+      const result = locationUtil.processRedirectUri(redirectUri, currentGrafanaLocation);
       expect(result).toBe('/d/home-dashboard?from=now-6h&to=now');
     });
 
     test('handles empty current params', () => {
       const redirectUri = '/a/custom-home-plugin?tab=overview';
-      const currentLocation = { ...mockLocation, search: '' };
-      const result = locationUtil.processRedirectUri(redirectUri, currentLocation);
+      const currentGrafanaLocation = { ...mockGrafanaLocation, search: '' };
+      const result = locationUtil.processRedirectUri(redirectUri, currentGrafanaLocation);
       expect(result).toBe('/a/custom-home-plugin?tab=overview');
     });
 
     test('handles both empty params', () => {
       const redirectUri = '/a/custom-home-plugin';
-      const currentLocation = { ...mockLocation, search: '' };
-      const result = locationUtil.processRedirectUri(redirectUri, currentLocation);
+      const currentGrafanaLocation = { ...mockGrafanaLocation, search: '' };
+      const result = locationUtil.processRedirectUri(redirectUri, currentGrafanaLocation);
       expect(result).toBe('/a/custom-home-plugin');
     });
 
     test('current params can have multiple values set', () => {
       const redirectUri = '/a/custom-home-plugin';
-      const currentLocation = { ...mockLocation, search: '?tab=recent&tab=starred' };
-      const result = locationUtil.processRedirectUri(redirectUri, currentLocation);
+      const currentGrafanaLocation = { ...mockGrafanaLocation, search: '?tab=recent&tab=starred' };
+      const result = locationUtil.processRedirectUri(redirectUri, currentGrafanaLocation);
       expect(result).toBe('/a/custom-home-plugin?tab=recent&tab=starred');
     });
 
     test('redirect URI params can have multiple values set', () => {
       const redirectUri = '/a/custom-home-plugin?tab=recent&tab=starred';
-      const currentLocation = { ...mockLocation, search: '?tab=overview' };
-      const result = locationUtil.processRedirectUri(redirectUri, currentLocation);
+      const currentGrafanaLocation = { ...mockGrafanaLocation, search: '?tab=overview' };
+      const result = locationUtil.processRedirectUri(redirectUri, currentGrafanaLocation);
       expect(result).toBe('/a/custom-home-plugin?tab=recent&tab=starred');
     });
 
     test('redirect URI can be an absolute URL', () => {
       const redirectUri = 'http://www.domain.com:1234/a/custom-home-plugin?tab=recent';
-      const currentLocation = { ...mockLocation, search: '?doc=some-query-value' };
-      const result = locationUtil.processRedirectUri(redirectUri, currentLocation);
+      const currentGrafanaLocation = { ...mockGrafanaLocation, search: '?doc=some-query-value' };
+      const result = locationUtil.processRedirectUri(redirectUri, currentGrafanaLocation);
       expect(result).toBe('http://www.domain.com:1234/a/custom-home-plugin?tab=recent&doc=some-query-value');
     });
 
@@ -329,36 +328,36 @@ describe('locationUtil', () => {
 
       test('strips base from redirect URI', () => {
         const redirectUri = '/grafana/a/custom-home-plugin?tab=overview';
-        const currentLocation = { ...mockLocation, search: '?theme=dark' };
-        const result = locationUtil.processRedirectUri(redirectUri, currentLocation);
+        const currentGrafanaLocation = { ...mockGrafanaLocation, search: '?theme=dark' };
+        const result = locationUtil.processRedirectUri(redirectUri, currentGrafanaLocation);
         expect(result).toBe('/a/custom-home-plugin?tab=overview&theme=dark');
       });
 
       test('does not strip base from redirect URI when an absolute URL is provided', () => {
         const redirectUri = 'http://www.domain.com:1234/grafana/a/custom-home-plugin?tab=overview';
-        const currentLocation = { ...mockLocation, search: '?theme=dark' };
-        const result = locationUtil.processRedirectUri(redirectUri, currentLocation);
+        const currentGrafanaLocation = { ...mockGrafanaLocation, search: '?theme=dark' };
+        const result = locationUtil.processRedirectUri(redirectUri, currentGrafanaLocation);
         expect(result).toBe('http://www.domain.com:1234/grafana/a/custom-home-plugin?tab=overview&theme=dark');
       });
 
       test('handles relative path without subpath prefix (e.g. home_page = /admin/users)', () => {
         const redirectUri = '/admin/users';
-        const currentLocation = { ...mockLocation, search: '' };
-        const result = locationUtil.processRedirectUri(redirectUri, currentLocation);
+        const currentGrafanaLocation = { ...mockGrafanaLocation, search: '' };
+        const result = locationUtil.processRedirectUri(redirectUri, currentGrafanaLocation);
         expect(result).toBe('/admin/users');
       });
 
       test('merges current params into relative path without subpath prefix', () => {
         const redirectUri = '/admin/users';
-        const currentLocation = { ...mockLocation, search: '?orgId=2' };
-        const result = locationUtil.processRedirectUri(redirectUri, currentLocation);
+        const currentGrafanaLocation = { ...mockGrafanaLocation, search: '?orgId=2' };
+        const result = locationUtil.processRedirectUri(redirectUri, currentGrafanaLocation);
         expect(result).toBe('/admin/users?orgId=2');
       });
 
       test('redirect URI params take precedence over current params when no subpath prefix', () => {
         const redirectUri = '/admin/users?tab=access';
-        const currentLocation = { ...mockLocation, search: '?tab=profile&orgId=2' };
-        const result = locationUtil.processRedirectUri(redirectUri, currentLocation);
+        const currentGrafanaLocation = { ...mockGrafanaLocation, search: '?tab=profile&orgId=2' };
+        const result = locationUtil.processRedirectUri(redirectUri, currentGrafanaLocation);
         expect(result).toBe('/admin/users?tab=access&orgId=2');
       });
     });

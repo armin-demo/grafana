@@ -71,4 +71,44 @@ describe('LocationService', () => {
       expect(hookResult.result.current).toBe(locationServiceLocal);
     });
   });
+
+  describe('subscribe', () => {
+    it('notifies on navigation and does not replay the current location', () => {
+      const service = new HistoryWrapper();
+      const locations: string[] = [];
+
+      const unsubscribe = service.subscribe((location) => {
+        locations.push(location.pathname);
+      });
+
+      expect(locations).toEqual([]);
+
+      service.push('/first');
+      service.push('/second');
+
+      expect(locations).toEqual(['/first', '/second']);
+
+      unsubscribe();
+      service.push('/third');
+
+      expect(locations).toEqual(['/first', '/second']);
+    });
+
+    it('exposes GrafanaLocation fields without requiring history types', () => {
+      const service = new HistoryWrapper();
+      let seen: { pathname: string; search: string; hash: string } | undefined;
+
+      service.subscribe((location) => {
+        seen = { pathname: location.pathname, search: location.search, hash: location.hash };
+      });
+
+      service.push('/dashboards?orgId=1#section');
+
+      expect(seen).toEqual({
+        pathname: '/dashboards',
+        search: '?orgId=1',
+        hash: '#section',
+      });
+    });
+  });
 });
