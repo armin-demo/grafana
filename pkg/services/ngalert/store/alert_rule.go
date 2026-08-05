@@ -352,6 +352,9 @@ func (st DBstore) ListDeletedRules(ctx context.Context, orgID int64) ([]*ngmodel
 				st.Logger.Error("Invalid rule found in DB store, cannot convert, ignoring it", "func", "GetAlertRuleVersions", "error", err, "version_id", rule.ID)
 				continue
 			}
+			// Soft-delete recovery rows store RuleUID = RuleGUID for uniqueness, but restore
+			// clients must see an empty UID so InsertAlertRules allocates a fresh live UID.
+			converted.UID = ""
 			alertRules = append(alertRules, &converted)
 		}
 		return nil

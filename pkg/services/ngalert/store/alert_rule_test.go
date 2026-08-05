@@ -807,7 +807,7 @@ func TestIntegration_DeleteAlertRulesByUID(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, deleted, 3)
 		for _, rule := range deleted {
-			assert.Equal(t, rule.GUID, rule.UID)
+			assert.Empty(t, rule.UID)
 			assert.Equal(t, int64(1), rule.Version)
 		}
 	})
@@ -3951,7 +3951,7 @@ func TestIntegration_ListDeletedRules(t *testing.T) {
 	t.Run("should return the last deleted rule", func(t *testing.T) {
 		list, err := store.ListDeletedRules(context.Background(), orgID)
 		require.NoError(t, err)
-		assert.Equal(t, rule1.GUID, list[0].UID)
+		assert.Empty(t, list[0].UID)
 		assert.Empty(t, rule1v2.Diff(list[0], "ID", "UID", "DashboardUID", "PanelID", "Updated", "UpdatedBy")) // ignore updated because it's not
 		assert.Equal(t, list[0].Updated.UTC(), clk.Now().UTC())
 		assert.EqualValues(t, list[0].UpdatedBy, new(models.UserUID("test")))
