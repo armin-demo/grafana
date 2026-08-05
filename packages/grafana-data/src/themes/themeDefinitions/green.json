@@ -20,7 +20,7 @@
       "text": "#86EFAC",
       "border": "#4ADE80",
       "name": "primary",
-      "shade": "rgb(28, 170, 80)",
+      "shade": "rgb(67, 205, 118)",
       "transparent": "#22C55E26",
       "contrastText": "#0A140C",
       "borderTransparent": "#4ADE8040"
@@ -40,7 +40,7 @@
       "text": "#86EFAC",
       "border": "#4ADE80",
       "name": "accent",
-      "shade": "rgb(20, 140, 65)",
+      "shade": "rgb(56, 176, 101)",
       "transparent": "#16A34A26",
       "contrastText": "#0A140C",
       "borderTransparent": "#4ADE8040"
