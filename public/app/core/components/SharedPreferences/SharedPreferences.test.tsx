@@ -207,7 +207,7 @@ describe('SharedPreferences', () => {
       expect(jest.mocked(homeDashboardChanged)).toHaveBeenCalledWith({
         preferenceType: 'user',
         action: 'set',
-        unifiedHomepageEnabled: false,
+        unifiedHomepageEnabled: true,
       });
     });
   });

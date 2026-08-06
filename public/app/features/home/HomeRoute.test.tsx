@@ -60,6 +60,7 @@ describe('HomeRoute', () => {
   const props = {} as ComponentProps<typeof HomeRoute>;
 
   it('flag off → renders dashboard proxy without probing merged preferences', async () => {
+    setTestFlags({ 'grafana.unifiedHomepage': false });
     stubMergedPreferences({ homeDashboardUID: '' });
 
     render(<HomeRoute {...props} />);

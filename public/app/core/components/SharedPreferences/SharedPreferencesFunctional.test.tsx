@@ -256,7 +256,7 @@ describe('SharedPreferencesFunctional', () => {
       expect(jest.mocked(homeDashboardChanged)).toHaveBeenCalledWith({
         preferenceType: 'user',
         action: 'set',
-        unifiedHomepageEnabled: false,
+        unifiedHomepageEnabled: true,
       });
     });
   });
@@ -304,7 +304,7 @@ describe('SharedPreferencesFunctional', () => {
       expect(jest.mocked(homeDashboardChanged)).toHaveBeenCalledWith({
         preferenceType: 'user',
         action: 'cleared',
-        unifiedHomepageEnabled: false,
+        unifiedHomepageEnabled: true,
       });
     });
   });

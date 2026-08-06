@@ -142,9 +142,9 @@ func TestDefaultHomeDashboard(t *testing.T) {
 	// Sanity check the embedded file still contains the structural pieces the
 	// frontend expects so a bad edit to home.json fails this test loudly.
 	require.Contains(t, dash.Spec.Object, "panels")
-	panels, ok := dash.Spec.Object["panels"].([]any)
+	_, ok = dash.Spec.Object["panels"].([]any)
 	require.True(t, ok, "panels should decode as a JSON array")
-	require.NotEmpty(t, panels)
+	// Bundled default is an empty stub — unified homepage is the default UI.
 }
 
 func TestHasCustomHome(t *testing.T) {

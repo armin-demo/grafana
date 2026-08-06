@@ -2800,15 +2800,18 @@
     {
       "metadata": {
         "name": "grafana.unifiedHomepage",
-        "resourceVersion": "1779440584464",
-        "creationTimestamp": "2026-05-22T09:03:04Z"
+        "resourceVersion": "1786030736640",
+        "creationTimestamp": "2026-05-22T09:03:04Z",
+        "annotations": {
+          "grafana.app/updatedTimestamp": "2026-08-06 15:38:56.640072187 +0000 UTC"
+        }
       },
       "spec": {
         "description": "Replaces the bundled home dashboard with the unified homepage React page",
-        "stage": "experimental",
+        "stage": "GA",
         "codeowner": "@grafana/grafana-frontend-navigation",
         "frontend": true,
-        "expression": "false"
+        "expression": "true"
       }
     },
     {
