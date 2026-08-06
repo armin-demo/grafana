@@ -3,7 +3,6 @@ import { lazy, Suspense, useEffect } from 'react';
 import { useMergedPreferencesQuery } from '@grafana/api-clients/rtkq/preferences/v1alpha1';
 import { locationUtil } from '@grafana/data';
 import { locationService } from '@grafana/runtime';
-import { useFlagGrafanaUnifiedHomepage } from '@grafana/runtime/internal';
 import { SETUP_GUIDE_HOME_URL } from 'app/core/hooks/useHomeNav';
 import { GrafanaRouteLoading } from 'app/core/navigation/GrafanaRouteLoading';
 
@@ -13,11 +12,6 @@ const DashboardPageProxy = lazy(
   () => import(/* webpackChunkName: "DashboardPageProxy" */ '../dashboard/containers/DashboardPageProxy')
 );
 const HomePage = lazy(() => import(/* webpackChunkName: "HomePage" */ './HomePage'));
-
-function HomeRouteInner(props: DashboardPageProxyProps) {
-  const flagOn = useFlagGrafanaUnifiedHomepage({ suspend: true });
-  return flagOn ? <UnifiedHomeRoute {...props} /> : <DashboardPageProxy {...props} />;
-}
 
 function UnifiedHomeRoute(props: DashboardPageProxyProps) {
   const { data, isLoading, isError } = useMergedPreferencesQuery();
@@ -38,10 +32,9 @@ function UnifiedHomeRoute(props: DashboardPageProxyProps) {
     return <GrafanaRouteLoading />;
   }
 
-  // Probe failed: we cannot tell whether a home dashboard is configured.
-  // Fall back to the dashboard proxy so existing on-prem setups still work.
+  // Probe failed: prefer the unified homepage over the removed legacy home dashboard.
   if (isError || !data) {
-    return <DashboardPageProxy {...props} />;
+    return <HomePage />;
   }
 
   if (homeDashboardUID) {
@@ -54,7 +47,7 @@ function UnifiedHomeRoute(props: DashboardPageProxyProps) {
 export default function HomeRoute(props: DashboardPageProxyProps) {
   return (
     <Suspense fallback={<GrafanaRouteLoading />}>
-      <HomeRouteInner {...props} />
+      <UnifiedHomeRoute {...props} />
     </Suspense>
   );
 }

@@ -3,25 +3,12 @@
   "panels": [
     {
       "datasource": null,
-      "gridPos": {
-        "h": 3,
-        "w": 24,
-        "x": 0,
-        "y": 0
-      },
-      "id": 1,
-      "title": "",
-      "transparent": false,
-      "type": "welcome"
-    },
-    {
-      "datasource": null,
       "folderId": 0,
       "gridPos": {
         "h": 15,
         "w": 12,
         "x": 0,
-        "y": 4
+        "y": 0
       },
       "id": 3,
       "links": [],
@@ -44,7 +31,7 @@
         "h": 15,
         "w": 12,
         "x": 12,
-        "y": 4
+        "y": 0
       },
       "id": 4,
       "links": [],

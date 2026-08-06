@@ -38,7 +38,7 @@ export const SharedPreferencesFunctional = memo((props: Props) => {
     useSharedPreferences(resourceUri);
 
   const isAnalyticsFrameworkEnabled = useBooleanFlagValue('analyticsFramework', true);
-  const unifiedHomepageEnabled = useBooleanFlagValue('grafana.unifiedHomepage', false);
+  const unifiedHomepageEnabled = useBooleanFlagValue('grafana.unifiedHomepage', true);
   const [state, setState] = useState<PrefsState>({
     theme: undefined,
     timezone: '',

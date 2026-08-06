@@ -256,13 +256,13 @@ describe('SharedPreferencesFunctional', () => {
       expect(jest.mocked(homeDashboardChanged)).toHaveBeenCalledWith({
         preferenceType: 'user',
         action: 'set',
-        unifiedHomepageEnabled: false,
+        unifiedHomepageEnabled: true,
       });
     });
   });
 
-  it('reports unifiedHomepageEnabled true when the flag is on', async () => {
-    setTestFlags({ 'grafana.unifiedHomepage': true });
+  it('reports unifiedHomepageEnabled false when the flag is off', async () => {
+    setTestFlags({ 'grafana.unifiedHomepage': false });
     const { user } = await setup();
 
     await selectComboboxOptionInTest(
@@ -275,7 +275,7 @@ describe('SharedPreferencesFunctional', () => {
       expect(jest.mocked(homeDashboardChanged)).toHaveBeenCalledWith({
         preferenceType: 'user',
         action: 'set',
-        unifiedHomepageEnabled: true,
+        unifiedHomepageEnabled: false,
       });
     });
   });
@@ -304,7 +304,7 @@ describe('SharedPreferencesFunctional', () => {
       expect(jest.mocked(homeDashboardChanged)).toHaveBeenCalledWith({
         preferenceType: 'user',
         action: 'cleared',
-        unifiedHomepageEnabled: false,
+        unifiedHomepageEnabled: true,
       });
     });
   });

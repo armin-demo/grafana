@@ -2805,10 +2805,10 @@
       },
       "spec": {
         "description": "Replaces the bundled home dashboard with the unified homepage React page",
-        "stage": "experimental",
+        "stage": "GA",
         "codeowner": "@grafana/grafana-frontend-navigation",
         "frontend": true,
-        "expression": "false"
+        "expression": "true"
       }
     },
     {

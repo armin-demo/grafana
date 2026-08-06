@@ -1459,59 +1459,6 @@ export const v0alpha1Response: PluginMetasResponse = structuredClone({
       kind: 'Meta',
       apiVersion: 'plugins.grafana.app/v0alpha1',
       metadata: {
-        name: 'gettingstarted',
-        namespace: 'default',
-      },
-      spec: {
-        pluginJson: {
-          id: 'gettingstarted',
-          type: 'panel',
-          name: 'Getting Started',
-          info: {
-            keywords: [],
-            logos: {
-              small: 'app/plugins/panel/gettingstarted/img/icn-dashlist-panel.svg',
-              large: 'app/plugins/panel/gettingstarted/img/icn-dashlist-panel.svg',
-            },
-            updated: '',
-            version: '',
-            author: {
-              name: 'Grafana Labs',
-              url: 'https://grafana.com',
-            },
-            links: [
-              {
-                name: 'Raise issue',
-                url: 'https://github.com/grafana/grafana/issues/new',
-              },
-            ],
-          },
-          dependencies: {
-            grafanaDependency: '',
-            grafanaVersion: '*',
-          },
-          hideFromList: true,
-          skipDataQuery: true,
-        },
-        class: 'core',
-        module: {
-          path: 'core:plugin/gettingstarted',
-          loadingStrategy: 'script',
-        },
-        baseURL: 'app/plugins/panel/gettingstarted',
-        signature: {
-          status: 'internal',
-        },
-        angular: {
-          detected: false,
-        },
-      },
-      status: {},
-    },
-    {
-      kind: 'Meta',
-      apiVersion: 'plugins.grafana.app/v0alpha1',
-      metadata: {
         name: 'grafana',
         namespace: 'default',
       },
@@ -4007,59 +3954,6 @@ export const v0alpha1Response: PluginMetasResponse = structuredClone({
           loadingStrategy: 'script',
         },
         baseURL: 'app/plugins/panel/trend',
-        signature: {
-          status: 'internal',
-        },
-        angular: {
-          detected: false,
-        },
-      },
-      status: {},
-    },
-    {
-      kind: 'Meta',
-      apiVersion: 'plugins.grafana.app/v0alpha1',
-      metadata: {
-        name: 'welcome',
-        namespace: 'default',
-      },
-      spec: {
-        pluginJson: {
-          id: 'welcome',
-          type: 'panel',
-          name: 'Welcome',
-          info: {
-            keywords: [],
-            logos: {
-              small: 'app/plugins/panel/welcome/img/icn-dashlist-panel.svg',
-              large: 'app/plugins/panel/welcome/img/icn-dashlist-panel.svg',
-            },
-            updated: '',
-            version: '',
-            author: {
-              name: 'Grafana Labs',
-              url: 'https://grafana.com',
-            },
-            links: [
-              {
-                name: 'Raise issue',
-                url: 'https://github.com/grafana/grafana/issues/new',
-              },
-            ],
-          },
-          dependencies: {
-            grafanaDependency: '',
-            grafanaVersion: '*',
-          },
-          hideFromList: true,
-          skipDataQuery: true,
-        },
-        class: 'core',
-        module: {
-          path: 'core:plugin/welcome',
-          loadingStrategy: 'script',
-        },
-        baseURL: 'app/plugins/panel/welcome',
         signature: {
           status: 'internal',
         },
