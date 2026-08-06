@@ -114,7 +114,7 @@ class SharedPreferences extends PureComponent<Props, State> {
         homeDashboardChanged({
           preferenceType: this.props.preferenceType,
           action: nextHomeDashboardUID ? 'set' : 'cleared',
-          unifiedHomepageEnabled: getFeatureFlagClient().getBooleanValue(FlagKeys.GrafanaUnifiedHomepage, false),
+          unifiedHomepageEnabled: getFeatureFlagClient().getBooleanValue(FlagKeys.GrafanaUnifiedHomepage, true),
         });
       }
 

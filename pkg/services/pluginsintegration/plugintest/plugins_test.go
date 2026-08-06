@@ -203,7 +203,6 @@ func verifyCorePluginCatalogue(t *testing.T, ctx context.Context, ps *pluginstor
 		"debug":          {},
 		"gauge":          {},
 		"geomap":         {},
-		"gettingstarted": {},
 		"heatmap":        {},
 		"histogram":      {},
 		"live":           {},
@@ -222,7 +221,6 @@ func verifyCorePluginCatalogue(t *testing.T, ctx context.Context, ps *pluginstor
 		"text":           {},
 		"timeseries":     {},
 		"trend":          {},
-		"welcome":        {},
 		"xychart":        {},
 	}
 

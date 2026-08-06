@@ -1,6 +1,5 @@
-import { act, getWrapper, renderHook } from 'test/test-utils';
+import { getWrapper, renderHook } from 'test/test-utils';
 
-import { setTestFlags } from '@grafana/test-utils/unstable';
 import { configureStore } from 'app/store/configureStore';
 
 import { SETUP_GUIDE_HOME_URL, useHomeNav } from './useHomeNav';
@@ -13,30 +12,13 @@ const renderUseHomeNav = (url: string) => {
 };
 
 describe('useHomeNav', () => {
-  afterEach(async () => {
-    // Wrap in act() because setTestFlags fires OpenFeature events that trigger React state updates
-    await act(async () => {
-      setTestFlags({});
-    });
-  });
-
-  it('flag off → returns the setup guide url unchanged', () => {
-    const { result } = renderUseHomeNav(SETUP_GUIDE_HOME_URL);
-
-    expect(result.current?.url).toBe(SETUP_GUIDE_HOME_URL);
-  });
-
-  it('flag on + setup guide url → rewrites the url to the homepage', () => {
-    setTestFlags({ 'grafana.unifiedHomepage': true });
-
+  it('setup guide url → rewrites the url to the homepage', () => {
     const { result } = renderUseHomeNav(SETUP_GUIDE_HOME_URL);
 
     expect(result.current?.url).toBe('/');
   });
 
-  it('flag on + other url → returns the url unchanged', () => {
-    setTestFlags({ 'grafana.unifiedHomepage': true });
-
+  it('other url → returns the url unchanged', () => {
     const { result } = renderUseHomeNav('/d/custom-home');
 
     expect(result.current?.url).toBe('/d/custom-home');
