@@ -1,7 +1,7 @@
 import { type performanceUtils } from '@grafana/scenes';
 
-import { PERFORMANCE_MARKS } from './performanceConstants';
 import { ScenePerformanceLogger } from './ScenePerformanceLogger';
+import { PERFORMANCE_MARKS } from './performanceConstants';
 
 describe('ScenePerformanceLogger User Timing cleanup', () => {
   let clearMarksSpy: jest.SpyInstance;
