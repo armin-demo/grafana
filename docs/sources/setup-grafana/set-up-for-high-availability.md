@@ -67,6 +67,12 @@ Legacy Grafana Alerting supports a limited form of high availability. In this mo
 
 Grafana Live works with limitations in highly available setup. For details, refer to the [Configure Grafana Live HA setup](../set-up-grafana-live/#configure-grafana-live-ha-setup).
 
+## Image rendering
+
+In a highly available deployment, run the Grafana image renderer as a shared remote service, or a fleet of renderers behind a load balancer, rather than as an in-process plugin on each node. Point every node's `callback_url` at the shared cluster hostname and use one shared `renderer_token` so any node can render through the load balancer. Because render tokens are stored in the `[remote_cache]`, which defaults to the shared database, all nodes can validate render requests.
+
+For instructions, refer to [High availability](image-rendering/#high-availability) on the Set up image rendering page.
+
 ## User sessions
 
 Grafana uses auth token strategy with database by default. This means that a load balancer can send a user to any Grafana server without having to log in on each server.
