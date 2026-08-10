@@ -1844,10 +1844,10 @@ var (
 		{
 			Name:        "recentlyViewedDashboards",
 			Description: "Enables recently viewed dashboards section in the browsing dashboard page",
-			Stage:       FeatureStageExperimental,
+			Stage:       FeatureStageGeneralAvailability,
 			Owner:       grafanaFrontendNavigation,
 			Generate:    Generate{LegacyFrontend: true, React: true}, // legacy frontend for old naming convention
-			Expression:  "false",
+			Expression:  "true", // enabled by default
 		},
 		{
 			Name:         "experimentRecentlyViewedDashboards",
