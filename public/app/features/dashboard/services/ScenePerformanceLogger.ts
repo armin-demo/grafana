@@ -1,7 +1,12 @@
 import { type performanceUtils, writePerformanceLog } from '@grafana/scenes';
 
 import { PERFORMANCE_MARKS, PERFORMANCE_MEASURES, SLOW_OPERATION_THRESHOLD_MS } from './performanceConstants';
-import { registerPerformanceObserver, createPerformanceMark, createPerformanceMeasure } from './performanceUtils';
+import {
+  registerPerformanceObserver,
+  createPerformanceMark,
+  createPerformanceMeasure,
+  clearPerformanceMark,
+} from './performanceUtils';
 
 /**
  * Grafana logger that subscribes to Scene performance events
@@ -9,6 +14,10 @@ import { registerPerformanceObserver, createPerformanceMark, createPerformanceMe
  */
 export class ScenePerformanceLogger implements performanceUtils.ScenePerformanceObserver {
   private panelGroupsOpen = new Set<string>(); // Track which panels we've seen
+  // Milestone marks are the only entries that never get paired into a measure, so they are not
+  // cleared by createPerformanceMeasure. Track them per interaction and clear them on completion
+  // to keep the User Timing buffer bounded (otherwise they leak until the tab OOMs).
+  private milestoneMarks = new Set<string>();
 
   public initialize() {
     writePerformanceLog('SPL', 'Performance logger ready');
@@ -16,7 +25,13 @@ export class ScenePerformanceLogger implements performanceUtils.ScenePerformance
 
   public destroy() {
     this.panelGroupsOpen.clear();
+    this.clearMilestoneMarks();
     writePerformanceLog('SPL', 'Performance logger state cleared');
+  }
+
+  private clearMilestoneMarks() {
+    this.milestoneMarks.forEach((markName) => clearPerformanceMark(markName));
+    this.milestoneMarks.clear();
   }
 
   // Dashboard-level events
@@ -33,6 +48,7 @@ export class ScenePerformanceLogger implements performanceUtils.ScenePerformance
     const milestone = data.milestone || 'unknown';
     const dashboardMilestoneMark = PERFORMANCE_MARKS.DASHBOARD_MILESTONE(data.operationId, milestone);
     createPerformanceMark(dashboardMilestoneMark, data.timestamp);
+    this.milestoneMarks.add(dashboardMilestoneMark);
   };
 
   onDashboardInteractionComplete = (data: performanceUtils.DashboardInteractionCompleteData): void => {
@@ -44,6 +60,7 @@ export class ScenePerformanceLogger implements performanceUtils.ScenePerformance
     createPerformanceMeasure(dashboardMeasureName, dashboardStartMark, dashboardEndMark);
 
     this.panelGroupsOpen.clear();
+    this.clearMilestoneMarks();
   };
 
   onPanelOperationStart = (data: performanceUtils.PanelPerformanceData): void => {

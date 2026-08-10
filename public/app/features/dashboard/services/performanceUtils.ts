@@ -123,6 +123,12 @@ export function createPerformanceMark(name: string, timestamp?: number): void {
 
 /**
  * Safely creates a performance measure, ignoring errors if the Performance API is not available.
+ *
+ * The mark(s) that bound the measure and the measure itself are cleared from the User Timing
+ * buffer once the measure has been created. The buffer would otherwise grow without bound (each
+ * dashboard interaction / panel operation writes uniquely named entries that are never read back),
+ * eventually exhausting tab memory when performance metrics are enabled. DevTools captures these
+ * entries at emit time, so clearing them afterwards does not affect an in-progress recording.
  */
 export function createPerformanceMeasure(name: string, startMark: string, endMark?: string): void {
   try {
@@ -132,8 +138,65 @@ export function createPerformanceMeasure(name: string, startMark: string, endMar
       } else {
         performance.measure(name, startMark);
       }
+      clearPerformanceMeasure(name);
     }
   } catch (error) {
     console.error(`❌ Failed to create performance measure: ${name}`, { startMark, endMark, error });
+  } finally {
+    clearPerformanceMark(startMark);
+    if (endMark) {
+      clearPerformanceMark(endMark);
+    }
   }
+}
+
+/**
+ * Safely clears a single named performance mark, ignoring errors if the Performance API is not
+ * available. Always clears by name so unrelated marks (e.g. frontend boot marks) are preserved.
+ */
+export function clearPerformanceMark(name: string): void {
+  try {
+    if (typeof performance !== 'undefined' && performance.clearMarks) {
+      performance.clearMarks(name);
+    }
+  } catch (error) {
+    console.error(`❌ Failed to clear performance mark: ${name}`, { error });
+  }
+}
+
+/**
+ * Safely clears a single named performance measure, ignoring errors if the Performance API is not
+ * available. Always clears by name so unrelated measures are preserved.
+ */
+export function clearPerformanceMeasure(name: string): void {
+  try {
+    if (typeof performance !== 'undefined' && performance.clearMeasures) {
+      performance.clearMeasures(name);
+    }
+  } catch (error) {
+    console.error(`❌ Failed to clear performance measure: ${name}`, { error });
+  }
+}
+
+const TIME_SINCE_BOOT_MEASURE = 'time_since_boot';
+const FRONTEND_BOOT_MARK = 'frontend_boot_js_done_time_seconds';
+
+/**
+ * Returns the elapsed time (ms) since the frontend finished booting.
+ *
+ * The transient measure is cleared immediately after its duration is read; it is recomputed on
+ * every dashboard interaction, so leaving it in the buffer would accumulate one leaked measure per
+ * interaction. Returns 0 when the boot mark is unavailable.
+ */
+export function measureTimeSinceBoot(): number {
+  try {
+    if (typeof performance !== 'undefined' && performance.measure) {
+      const duration = performance.measure(TIME_SINCE_BOOT_MEASURE, FRONTEND_BOOT_MARK)?.duration ?? 0;
+      clearPerformanceMeasure(TIME_SINCE_BOOT_MEASURE);
+      return duration;
+    }
+  } catch (error) {
+    // The boot mark may not exist yet in some environments; fall through to the default.
+  }
+  return 0;
 }
