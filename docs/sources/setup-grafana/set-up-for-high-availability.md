@@ -67,6 +67,55 @@ Legacy Grafana Alerting supports a limited form of high availability. In this mo
 
 Grafana Live works with limitations in highly available setup. For details, refer to the [Configure Grafana Live HA setup](../set-up-grafana-live/#configure-grafana-live-ha-setup).
 
+## Image rendering
+
+Grafana uses the [Grafana Image Renderer](https://grafana.com/docs/grafana/<GRAFANA_VERSION>/setup-grafana/image-rendering/) to render panels and dashboards to PNG images. Image rendering powers dashboard and panel sharing, PDF export, [reporting](../../visualizations/dashboards/create-reports/) in Grafana Enterprise, and [images in alert notifications](../../alerting/configure-notifications/template-notifications/images-in-notifications/).
+
+In a highly available deployment, each Grafana node renders images on its own. You must make the rendering service reachable from every node and make every node reachable from the rendering service. Configure the following settings identically on all nodes so any node can render regardless of which node the load balancer routes a request to.
+
+Refer to [Set up image rendering](https://grafana.com/docs/grafana/<GRAFANA_VERSION>/setup-grafana/image-rendering/) for installation options and to [`[rendering]`](../configure-grafana/#rendering) for the full list of configuration options.
+
+### Run the image renderer as a remote service
+
+Run the Grafana Image Renderer as a standalone remote service instead of the bundled plugin. A remote service is shared by every Grafana node and scales independently of Grafana. Point each node at the same service with the [`server_url`](../configure-grafana/#server_url) setting:
+
+```ini
+[rendering]
+server_url = http://renderer:8081/render
+```
+
+To make rendering itself highly available, run more than one instance of the rendering service behind its own load balancer and set `server_url` to the load balancer address.
+
+### Make Grafana reachable from the renderer
+
+When the rendering service renders an image, it calls back to Grafana to load the dashboard. Set [`callback_url`](../configure-grafana/#callback_url) on every node to a URL where the renderer can reach Grafana. In a cluster, use the shared hostname served by your load balancer, which is the same value as [`root_url`](../configure-grafana/#root_url):
+
+```ini
+[rendering]
+callback_url = https://grafana.example.com/
+```
+
+Because the load balancer can route the callback to any node, `callback_url` must point at the shared hostname rather than a single node. Make sure the rendering service can resolve and reach this hostname on the network.
+
+### Authenticate requests between Grafana and the renderer
+
+Set a shared [`renderer_token`](../configure-grafana/#renderer_token) on every node and configure the rendering service with the same token. The renderer rejects any request whose token doesn't match.
+
+```ini
+[rendering]
+renderer_token = <YOUR_SHARED_TOKEN>
+```
+
+Grafana Enterprise and OSS enable the `renderAuthJWT` feature toggle by default. With this toggle on, Grafana signs a short-lived JWT with `renderer_token` for each render request, so any node can verify the callback without a shared cache lookup. This makes image rendering work in a highly available cluster without extra state. When `renderAuthJWT` is enabled, `renderer_token` must be set to a value that isn't empty or the default (`-`), or Grafana refuses to start.
+
+{{< admonition type="note" >}}
+If you turn off `renderAuthJWT` to use the legacy opaque render tokens, Grafana stores those tokens in the [remote cache](../configure-grafana/#remote_cache). The default `[remote_cache] type = database` uses your shared high availability database, so callbacks still work on any node. Don't use a per-node remote cache in this mode, because a callback that lands on a different node can't validate the token.
+{{< /admonition >}}
+
+### Tune concurrency per node
+
+The [`concurrent_render_request_limit`](../configure-grafana/#concurrent_render_request_limit) setting applies to each Grafana node, not to the cluster as a whole. Size it for a single node and size your rendering service for the combined load of all nodes.
+
 ## User sessions
 
 Grafana uses auth token strategy with database by default. This means that a load balancer can send a user to any Grafana server without having to log in on each server.
