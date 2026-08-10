@@ -12,11 +12,13 @@ export const LastViewedDashboardButton = memo(function LastViewedDashboardButton
   const location = useLocation();
 
   // Re-read on every navigation so the shortcut always points at the most recently opened dashboard.
+  // location.pathname isn't referenced inside the callback; it's the retrigger, hence the disable.
   const { value: dashboards = [] } = useAsync(async () => {
     if (!contextSrv.user.isSignedIn) {
       return [];
     }
     return getRecentlyViewedDashboards(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
   const lastViewed = dashboards[0];
