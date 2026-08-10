@@ -39,12 +39,19 @@ function panelOp(
 describe('DashboardAnalyticsAggregator', () => {
   let aggregator: DashboardAnalyticsAggregator;
 
+  let clearMeasuresSpy: jest.SpyInstance;
+
   beforeEach(() => {
     jest.clearAllMocks();
     // sendAnalyticsReport measures against a boot mark that is not present in tests.
     jest.spyOn(performance, 'measure').mockReturnValue({ duration: 0 } as PerformanceMeasure);
+    clearMeasuresSpy = jest.spyOn(performance, 'clearMeasures').mockImplementation(() => {});
     aggregator = new DashboardAnalyticsAggregator();
     aggregator.initialize('dash-uid', 'Test dashboard');
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   it('reports a per-phase duration breakdown alongside total_time on the panel_render event', () => {
@@ -84,5 +91,19 @@ describe('DashboardAnalyticsAggregator', () => {
       fieldConfigCount: 1,
       pluginLoadCount: 1,
     });
+  });
+
+  it('clears the time_since_boot measure after reporting so it does not leak in the User Timing buffer', () => {
+    aggregator.onDashboardInteractionComplete({
+      interactionType: 'dashboard_view',
+      operationId: 'op-1',
+      timestamp: 1000,
+      duration: 250,
+      networkDuration: 0,
+      longFramesCount: 0,
+      longFramesTotalTime: 0,
+    });
+
+    expect(clearMeasuresSpy).toHaveBeenCalledWith('time_since_boot');
   });
 });
