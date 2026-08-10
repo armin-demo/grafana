@@ -12191,6 +12191,10 @@
     "kiosk": {
       "tv-alert": "Press ESC to exit kiosk mode"
     },
+    "last-viewed-dashboard": {
+      "aria-label": "Last viewed dashboard",
+      "tooltip": "Go to last viewed dashboard: {{name}}"
+    },
     "megamenu": {
       "close": "Close menu",
       "dialog-label": "Navigation",
