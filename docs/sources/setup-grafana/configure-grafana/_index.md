@@ -2641,6 +2641,8 @@ This option does not require any configuration.
 
 Options to configure a remote HTTP image rendering service, for example, using https://github.com/grafana/grafana-image-renderer.
 
+If you run Grafana in a highly available cluster, refer to [Image rendering](../set-up-for-high-availability/#image-rendering) for guidance on `server_url`, `callback_url`, and `renderer_token` across multiple nodes.
+
 ##### `renderer_token`
 
 An authentication token is be sent to and verified by the renderer.
