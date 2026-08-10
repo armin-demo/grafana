@@ -59,10 +59,34 @@ export function getPerformanceMemory(): PerformanceMemory {
   };
 }
 
+const BOOT_MARK = 'frontend_boot_js_done_time_seconds';
+const TIME_SINCE_BOOT_MEASURE = 'time_since_boot';
+
+/**
+ * Measure elapsed time since the frontend boot mark.
+ *
+ * The measure is cleared immediately after reading its duration: it is reported once per dashboard
+ * interaction, so leaving it in the User Timing buffer would accumulate a PerformanceMeasure entry
+ * on every refresh/interaction and contribute to unbounded memory growth. Returns 0 when the boot
+ * mark is unavailable (e.g. in tests) instead of throwing.
+ */
+export function measureTimeSinceBoot(): number {
+  try {
+    if (typeof performance === 'undefined' || !performance.measure) {
+      return 0;
+    }
+    const duration = performance.measure(TIME_SINCE_BOOT_MEASURE, BOOT_MARK).duration;
+    performance.clearMeasures?.(TIME_SINCE_BOOT_MEASURE);
+    return duration;
+  } catch {
+    return 0;
+  }
+}
+
 /**
  * Check if performance logging is enabled via localStorage
  */
-function isPerformanceLoggingEnabled(): boolean {
+export function isPerformanceLoggingEnabled(): boolean {
   if (typeof window !== 'undefined') {
     return store.get('grafana.debug.sceneProfiling') === 'true';
   }
@@ -106,8 +130,16 @@ export function writePerformanceGroupEnd(): void {
 
 /**
  * Safely creates a performance mark, ignoring errors if the Performance API is not available.
+ *
+ * Marks are only emitted when scene profiling debug logging is enabled. They exist purely as
+ * Chrome DevTools User Timing annotations for debugging; the User Timing buffer is unbounded and
+ * these entries are never read back programmatically, so emitting them on every dashboard/panel
+ * operation would leak memory (PerformanceMark growth) until the tab OOMs.
  */
 export function createPerformanceMark(name: string, timestamp?: number): void {
+  if (!isPerformanceLoggingEnabled()) {
+    return;
+  }
   try {
     if (typeof performance !== 'undefined' && performance.mark) {
       if (timestamp !== undefined) {
@@ -123,8 +155,15 @@ export function createPerformanceMark(name: string, timestamp?: number): void {
 
 /**
  * Safely creates a performance measure, ignoring errors if the Performance API is not available.
+ *
+ * Like createPerformanceMark, measures are only emitted when scene profiling debug logging is
+ * enabled. They are DevTools-only annotations that are never read back, so emitting them
+ * unconditionally leaks memory (PerformanceMeasure growth) on dashboards with profiling enabled.
  */
 export function createPerformanceMeasure(name: string, startMark: string, endMark?: string): void {
+  if (!isPerformanceLoggingEnabled()) {
+    return;
+  }
   try {
     if (typeof performance !== 'undefined' && performance.measure) {
       if (endMark) {

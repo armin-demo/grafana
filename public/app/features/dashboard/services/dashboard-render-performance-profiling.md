@@ -320,6 +320,8 @@ Creates Chrome DevTools performance marks and measurements for debugging:
 
 ### Chrome DevTools Integration
 
+> **Note:** Performance marks and measurements are only emitted when scene profiling debug logging is enabled (`localStorage.setItem('grafana.debug.sceneProfiling', 'true')`). They are DevTools-only annotations and are never read back programmatically. Because the browser's User Timing buffer is unbounded, emitting them on every dashboard interaction and panel operation would otherwise accumulate `PerformanceMark`/`PerformanceMeasure` entries indefinitely and eventually crash the tab (OOM). Enabling `dashboard_performance_metrics` alone still collects and reports all analytics (via `reportInteraction`/`logMeasurement`) without creating these marks.
+
 Performance operations are recorded as marks and measurements in the Chrome DevTools Performance timeline:
 
 **Dashboard-level marks:**
