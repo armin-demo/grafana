@@ -23,6 +23,8 @@ aliases:
 
 You can also configure Git Sync using `gcx`, the Grafana CLI. Since Git Sync configuration is managed as code using Custom Resource Definitions (CRDs), you can create your required resources in YAML files and push them to Grafana using `gcx`. This approach enables automated, GitOps-style workflows for managing Git Sync configuration instead of using the Grafana UI.
 
+If you run Grafana on Kubernetes and want to apply these manifests with Helm or Argo CD instead of the CLI, refer to [Set up Git Sync with Kubernetes and Argo CD](https://grafana.com/docs/grafana/<GRAFANA_VERSION>/as-code/observability-as-code/git-sync/git-sync-setup/set-up-kubernetes/).
+
 For more information, refer to the following documents:
 
 - [Repository resource](https://grafana.com/docs/grafana/<GRAFANA_VERSION>/as-code/observability-as-code/git-sync/key-concepts#git-sync-repository-resource) and [Connection resource](https://grafana.com/docs/grafana/<GRAFANA_VERSION>/as-code/observability-as-code/git-sync/key-concepts#git-sync-repository-resource) overview
