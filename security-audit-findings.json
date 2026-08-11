@@ -1,0 +1,121 @@
+[
+  {
+    "severity": "high",
+    "location": "conf/defaults.ini",
+    "title": "Default secret_key shipped in defaults.ini is used in production without a hard startup failure",
+    "description": "The defaults.ini file ships a well-known secret_key value 'SW2YcwTIb9zpOOhoPsMm' that is used for envelope encryption key derivation, auth token hashing, OAuth state HMAC, and email verification codes. While an advisory check exists in the advisor plugin, Grafana does NOT refuse to start when this default key is in use. Many operators deploy Grafana without changing it, meaning all their encrypted secrets (datasource passwords, API keys, signing keys) are protected by a publicly-known key.",
+    "impact": "An attacker who gains read access to the Grafana database (e.g., via SQL injection, backup exposure, or misconfigured access) can decrypt all secrets stored using envelope encryption, since the data encryption keys are themselves encrypted with a key derived from this publicly-known secret. Additionally, the attacker can forge auth token hashes and email verification codes.",
+    "attack_path": [
+      "1. Attacker identifies a Grafana instance using default configuration (very common in container/quick-start deployments).",
+      "2. Attacker gains read access to the Grafana database (via SQL injection, exposed SQLite file, backup file, or misconfigured database access).",
+      "3. Attacker reads encrypted data keys from the data_key table.",
+      "4. Attacker uses the publicly-known secret_key 'SW2YcwTIb9zpOOhoPsMm' with PBKDF2-SHA256 to derive the AES key.",
+      "5. Attacker decrypts the data encryption keys, then uses them to decrypt all stored secrets (datasource passwords, plugin secrets, etc.).",
+      "6. The same key is also in [secrets_manager.encryption.secret_key.v1] section, so both legacy and envelope encryption paths are compromised."
+    ],
+    "evidence": [
+      "conf/defaults.ini:473 - secret_key = SW2YcwTIb9zpOOhoPsMm",
+      "conf/defaults.ini:2510 - secret_key = SW2YcwTIb9zpOOhoPsMm (secrets_manager section)",
+      "pkg/setting/setting.go:1985 - cfg.SecretKey = valueAsString(security, 'secret_key', '') (no validation for default)",
+      "pkg/services/kmsproviders/defaultprovider/grafana_provider.go:24 - key := p.cfg.SectionWithEnvOverrides('security').Key('secret_key').Value()",
+      "apps/advisor/pkg/app/checks/configchecks/security_config_step.go:56 - advisory-only check, does not prevent startup"
+    ],
+    "remediation": "Add a hard startup failure (or at minimum a forced first-login password change flow) when the default secret_key is detected in production mode. Log a critical warning and refuse to start unless the operator explicitly opts in with a flag like --allow-default-secret-key."
+  },
+  {
+    "severity": "high",
+    "location": "pkg/services/encryption/provider/provider.go",
+    "title": "AES-GCM cipher is not registered for encryption, forcing all new encryptions through unauthenticated AES-CFB",
+    "description": "The encryption provider only registers AES-CFB as a cipher (for encryption) but registers both AES-CFB and AES-GCM as deciphers. This means AES-GCM can only be used for backward-compatible decryption, but all NEW data is encrypted with AES-CFB. Even if an operator configures security.encryption.algorithm=aes-gcm, the startup check in service.go will fail because no GCM cipher is registered, preventing GCM adoption. The defaultEncryptionAlgorithm is hardcoded to AES-CFB.",
+    "impact": "All newly encrypted data (datasource passwords, plugin secrets, signing keys) uses AES-CFB without authentication. An attacker with write access to the database can perform ciphertext manipulation attacks (bit-flipping) to alter encrypted values without detection, potentially injecting malicious credentials or escalating privileges.",
+    "attack_path": [
+      "1. Attacker gains write access to the Grafana database (e.g., via SQL injection).",
+      "2. Attacker identifies encrypted datasource credentials in the secure_json_data column.",
+      "3. Since AES-CFB is a stream cipher mode without authentication, attacker performs targeted bit-flipping on the ciphertext.",
+      "4. The modified ciphertext decrypts successfully (no integrity check) to attacker-controlled values.",
+      "5. Attacker modifies a datasource credential to point to an attacker-controlled server, capturing subsequent queries."
+    ],
+    "evidence": [
+      "pkg/services/encryption/provider/provider.go:14-15 - ProvideCiphers only returns AesCfb",
+      "pkg/services/encryption/service/service.go:24 - defaultEncryptionAlgorithm = encryption.AesCfb",
+      "pkg/services/encryption/service/service_test.go:58-59 - Test confirms 'encrypt with aes-gcm should fail'",
+      "pkg/services/encryption/provider/cipher_aescfb.go:42 - cipher.NewCFBEncrypter (unauthenticated)"
+    ],
+    "remediation": "Register an AES-GCM cipher implementation alongside the existing AES-CFB cipher. Change the default encryption algorithm to AES-GCM. Provide a migration path to re-encrypt existing AES-CFB data with AES-GCM."
+  },
+  {
+    "severity": "medium",
+    "location": "pkg/services/secrets/manager/manager.go",
+    "title": "Envelope encryption data keys are only 128-bit (16 bytes) instead of the recommended 256-bit",
+    "description": "The newRandomDataKey() function generates 16-byte (128-bit) random data encryption keys for envelope encryption. While 128-bit AES is not broken, modern best practice for AES-256 (which is what KeyToBytes derives via PBKDF2 with keyLen=32) recommends 256-bit data keys for defense-in-depth. The data key is passed as a string to the encryption layer which then derives a 256-bit AES key from it via PBKDF2, meaning the effective entropy of the 256-bit key is capped at 128 bits of the source data key.",
+    "impact": "The effective key strength of the envelope encryption is limited to 128 bits regardless of the AES-256 key derivation. While this is still computationally infeasible to brute-force today, it reduces the security margin below what the system appears to provide (AES-256) and does not meet compliance requirements that mandate 256-bit key strength (e.g., certain FIPS configurations).",
+    "attack_path": [
+      "1. Attacker obtains encrypted data keys from the database.",
+      "2. Attacker attempts to brute-force the 128-bit data key space.",
+      "3. While 2^128 is currently infeasible, it provides less margin than the apparent 2^256 AES-256 suggests.",
+      "4. Future advances in computing (quantum or classical) would break 128-bit keys before 256-bit keys."
+    ],
+    "evidence": [
+      "pkg/services/secrets/manager/manager.go:301 - rawDataKey := make([]byte, 16)",
+      "pkg/registry/apis/secret/encryption/manager/manager.go:310 - rawDataKey := make([]byte, 16)",
+      "pkg/services/encryption/encryption.go:46 - KeyToBytes derives 32-byte key via PBKDF2 from the 16-byte data key"
+    ],
+    "remediation": "Increase the data key size to 32 bytes (256-bit) in newRandomDataKey(). This change is backward-compatible because existing data keys are stored encrypted and identified by ID."
+  },
+  {
+    "severity": "medium",
+    "location": "pkg/services/auth/authimpl/auth_token.go",
+    "title": "Auth token hashing uses SHA256(token+secretKey) with simple string concatenation instead of HMAC",
+    "description": "The hashToken function at line 734 computes SHA256(token + secretKey) using direct string concatenation. This is not the same as HMAC and is theoretically vulnerable to length-extension attacks on SHA-256. While the practical exploitability depends on the specific protocol (and is limited since the token is random and the hash is used for database lookup), using plain concatenation-based hashing is a cryptographic anti-pattern that HMAC was specifically designed to prevent.",
+    "impact": "Using SHA256 with concatenation instead of HMAC is a well-known cryptographic weakness. While the direct exploitability in this context is limited (the token is 32 hex chars of random data), the same pattern appears in OAuth state hashing (hashOAuthState). It reduces defense-in-depth and could become exploitable if the usage pattern changes.",
+    "attack_path": [
+      "1. An attacker with knowledge of the secret_key (which may be the default) can compute valid token hashes.",
+      "2. The SHA256(token + key) construction is susceptible to length-extension attacks in theory.",
+      "3. If the attacker can observe partial token hashes or exploit timing in DB queries, the non-HMAC construction provides less protection than HMAC would."
+    ],
+    "evidence": [
+      "pkg/services/auth/authimpl/auth_token.go:735 - hashBytes := sha256.Sum256([]byte(token + secretKey))",
+      "pkg/services/authn/clients/oauth.go:373 - hashBytes := sha256.Sum256([]byte(state + secret + seed))"
+    ],
+    "remediation": "Replace SHA256(token + secretKey) with HMAC-SHA256(secretKey, token). The notifications/codes.go already correctly uses HMAC-SHA256 for email verification codes - apply the same pattern to token hashing and OAuth state hashing."
+  },
+  {
+    "severity": "medium",
+    "location": "pkg/util/shortid_generator.go",
+    "title": "Data key IDs in envelope encryption use math/rand-seeded snowflake IDs instead of crypto/rand",
+    "description": "GenerateShortUID() uses math/rand seeded with time.Now().UnixNano() to initialize a snowflake node (rand.Int63n(1024)) and to select prefix/suffix characters. This function is called in secrets/manager/manager.go:281 to generate the ID for each new data encryption key. While the ID itself is not a secret, predictable IDs could allow an attacker to enumerate or predict valid data key IDs, which are used as lookup keys in the decryption path. The snowflake node ID is selected from only 1024 possibilities, and the seed is time-based.",
+    "impact": "An attacker who can predict or enumerate data key IDs could attempt targeted attacks against the decryption path. The time-seeded math/rand also means that if two Grafana instances start at very close times, they may generate colliding IDs. More importantly, the predictable ID generation weakens the assumption that data key IDs are opaque identifiers.",
+    "attack_path": [
+      "1. Attacker determines the approximate startup time of the Grafana instance.",
+      "2. Attacker seeds their own math/rand with the same UnixNano value.",
+      "3. Attacker predicts the snowflake node ID (1 of 1024) and the sequence of GenerateShortUID outputs.",
+      "4. Attacker uses predicted data key IDs to probe the decryption path or to forge encrypted payloads with valid-looking key ID prefixes."
+    ],
+    "evidence": [
+      "pkg/util/shortid_generator.go:17 - var uidrand = rand.New(rand.NewSource(time.Now().UnixNano()))",
+      "pkg/util/shortid_generator.go:58 - node, _ = snowflake.NewNode(rand.Int63n(1024))",
+      "pkg/services/secrets/manager/manager.go:281 - id := util.GenerateShortUID()"
+    ],
+    "remediation": "For security-sensitive ID generation (data key IDs), use crypto/rand instead of math/rand. Consider using UUID v4 (which already uses crypto/rand internally) as the fallback in GenerateShortUID already demonstrates."
+  },
+  {
+    "severity": "medium",
+    "location": "pkg/services/secrets/manager/cache.go",
+    "title": "Decrypted data encryption keys are cached in plaintext memory without any protection",
+    "description": "The dataKeyCache stores decrypted data encryption keys as plaintext []byte in a Go map with a default TTL of 15 minutes. The keys are never zeroed from memory after use, and the Go garbage collector does not guarantee timely zeroing of freed memory. A memory dump, core dump, or process memory access would expose all cached data encryption keys in plaintext.",
+    "impact": "An attacker who can read the Grafana process memory (via /proc/pid/mem, core dump, memory forensics, or a memory disclosure vulnerability) can extract all currently-cached data encryption keys and use them to decrypt any secrets encrypted with those keys, bypassing the envelope encryption entirely.",
+    "attack_path": [
+      "1. Attacker gains ability to read Grafana process memory (local access, container escape, /proc access, core dump, or memory disclosure vuln).",
+      "2. Attacker scans memory for the dataKeyCache structure or searches for patterns matching 16-byte keys.",
+      "3. Attacker extracts plaintext data encryption keys from the cache.",
+      "4. Attacker uses extracted keys to decrypt secrets from the database without needing the master secret_key."
+    ],
+    "evidence": [
+      "pkg/services/secrets/manager/cache.go:14 - dataKey []byte stored in plaintext",
+      "pkg/services/secrets/manager/cache.go:80 - c.byId[entry.id] = entry (no encryption at rest in memory)",
+      "pkg/services/secrets/manager/manager.go:77 - Default TTL is 15 minutes",
+      "pkg/services/secrets/manager/cache.go:109-113 - flush() replaces maps but does not zero old entries"
+    ],
+    "remediation": "Implement memory protection for cached data keys: use a library like memguard to store keys in protected memory pages, or at minimum zero key material from byte slices before they become eligible for garbage collection. Consider reducing the default cache TTL and implementing explicit key zeroing in the cache eviction path."
+  }
+]
