@@ -1,0 +1,99 @@
+[
+  {
+    "severity": "high",
+    "location": "pkg/services/serviceaccounts/database/store.go",
+    "title": "EnableServiceAccount SQL query missing org_id check allows cross-organization service account manipulation",
+    "description": "The EnableServiceAccount store method constructs a SQL UPDATE query that only filters by service_account_id and is_service_account=true, but does NOT include the org_id in the WHERE clause. This means a user in org A who knows (or guesses) the numeric ID of a service account in org B can enable or disable that service account across organization boundaries. The orgID parameter is passed to the function but never used in the SQL query.",
+    "impact": "An attacker with access to one organization can disable service accounts belonging to other organizations, causing denial-of-service for those organizations' automated integrations. Conversely, they could re-enable a disabled service account in another org to restore access that was intentionally revoked.",
+    "attack_path": [
+      "1. Attacker authenticates as a user with serviceaccounts:write permission in org A",
+      "2. Attacker determines or brute-forces the numeric ID of a service account in org B (IDs are sequential integers)",
+      "3. Attacker calls PATCH /api/serviceaccounts/{id}/enable or disable endpoint with the target ID",
+      "4. The API handler passes orgID from the attacker's context, but the store layer ignores it in the SQL query",
+      "5. The target service account in org B is enabled/disabled regardless of org boundary"
+    ],
+    "evidence": [
+      "pkg/services/serviceaccounts/database/store.go:176-182",
+      "pkg/services/serviceaccounts/manager/service.go:251-259"
+    ],
+    "remediation": "Add 'AND org_id = ?' to the WHERE clause of the UPDATE statement in EnableServiceAccount, and pass orgID as an additional parameter. The corrected query should be: UPDATE \"user\" SET is_disabled = ? WHERE id = ? AND is_service_account = ? AND org_id = ?. Alternatively, JOIN with org_user to validate org membership."
+  },
+  {
+    "severity": "medium",
+    "location": "pkg/services/publicdashboards/internal/api/middleware.go",
+    "title": "Missing return statement after invalid access token error allows middleware bypass",
+    "description": "In the RequiresExistingAccessToken middleware function, when IsValidAccessToken returns false, the code calls c.JsonApiErr to write a 400 error response but does NOT return from the function. Execution continues past the validation check into the database query with the invalid token. While Grafana's response writing typically prevents double-writes, this is a defense-in-depth failure that could lead to unnecessary database queries with malformed input or, depending on the web framework's behavior, allow the handler chain to continue processing.",
+    "impact": "An attacker can submit malformed access tokens that bypass the format validation check. The invalid token is then passed to ExistsEnabledByAccessToken which queries the database. This could be used for timing-based oracle attacks or to cause unnecessary database load. In edge cases with certain web framework behaviors, the handler chain may continue executing.",
+    "attack_path": [
+      "1. Attacker sends a request to a public dashboard endpoint using this middleware with a malformed (non-UUID) access token",
+      "2. The middleware writes a 400 error response via JsonApiErr",
+      "3. Due to missing 'return', execution continues to the database query",
+      "4. The database is queried with the malformed token",
+      "5. Depending on framework behavior, subsequent middleware or handlers may also execute"
+    ],
+    "evidence": [
+      "pkg/services/publicdashboards/internal/api/middleware.go:48-50"
+    ],
+    "remediation": "Add a 'return' statement after the c.JsonApiErr call on line 49-50. The corrected code should be: if !validation.IsValidAccessToken(accessToken) { c.JsonApiErr(http.StatusBadRequest, \"Invalid access token\", nil); return }"
+  },
+  {
+    "severity": "medium",
+    "location": "pkg/services/dashboards/service/dashboard_service.go",
+    "title": "TOCTOU race condition between permission check and dashboard save in BuildSaveDashboardCommand",
+    "description": "The BuildSaveDashboardCommand method performs a permission check (canSaveDashboard/canCreateDashboard) and then returns a command object that is later executed by saveDashboard. Between the time the permission is checked and the time the dashboard is actually written, the dashboard's folder or permissions could change. Additionally, ValidateDashboardBeforeSave fetches the existing dashboard and checks version conflicts, but between that check and the actual k8s Update call, another concurrent request could modify the same dashboard. While the k8s resource version mechanism provides some protection, the legacy permission check and folder validation happen in a separate non-atomic step.",
+    "impact": "In a concurrent environment, a race condition could allow a user to save a dashboard to a folder they no longer have access to, or to overwrite changes made by another user between the permission check and the actual write operation. The window is small but exploitable under load.",
+    "attack_path": [
+      "1. User A has write permission to dashboard X in folder F1",
+      "2. User A initiates a save of dashboard X (BuildSaveDashboardCommand runs permission check - passes)",
+      "3. Concurrently, an admin moves dashboard X to folder F2 where User A has no access",
+      "4. User A's save command completes, writing to the dashboard despite no longer having folder access",
+      "5. The dashboard is now modified by a user who shouldn't have access to its current folder"
+    ],
+    "evidence": [
+      "pkg/services/dashboards/service/dashboard_service.go:685-803",
+      "pkg/services/dashboards/service/dashboard_service.go:805-875",
+      "pkg/services/dashboards/service/dashboard_service.go:1061-1093"
+    ],
+    "remediation": "Move the permission check closer to the write operation, ideally as part of the k8s admission webhook or within the same transaction. Consider using optimistic locking with resource version checks that also validate folder membership at write time."
+  },
+  {
+    "severity": "medium",
+    "location": "pkg/services/publicdashboards/internal/service/query.go",
+    "title": "Public dashboard query endpoint exposes datasource UIDs and query structure to unauthenticated users",
+    "description": "The GetQueryDataResponse function in the public dashboards service builds metric requests from the dashboard's panel targets and executes queries using a service identity (bypassing normal auth). While the sanitizeData function removes 'expr', 'query', and 'rawSql' fields from the view response, the actual query execution path (buildMetricRequest) passes through the full datasource UIDs and query configuration from the dashboard JSON. The sanitizeMetadataFromQueryData removes ExecutedQueryString but the response frames themselves may contain datasource-specific metadata, field names, or error messages that reveal internal infrastructure details.",
+    "impact": "An unauthenticated attacker with only a public dashboard access token can enumerate internal datasource UIDs, observe query patterns through response metadata, and potentially use timing attacks to probe which datasources are configured. Error messages from failed queries may reveal internal hostnames or connection details.",
+    "attack_path": [
+      "1. Attacker obtains or guesses a valid public dashboard access token (32-char hex string)",
+      "2. Attacker calls POST /api/public/dashboards/{accessToken}/panels/{panelId}/query",
+      "3. The service executes queries against internal datasources using a service identity",
+      "4. Response frames may contain datasource-specific metadata revealing internal infrastructure",
+      "5. By iterating panel IDs, attacker can discover all datasources configured on the dashboard"
+    ],
+    "evidence": [
+      "pkg/services/publicdashboards/internal/service/query.go:133-161",
+      "pkg/services/publicdashboards/internal/service/query.go:434-443",
+      "pkg/services/publicdashboards/internal/service/service.go:88-122"
+    ],
+    "remediation": "Sanitize error responses from datasource queries before returning them to public dashboard consumers. Strip or redact datasource UIDs, internal hostnames, and connection details from error messages. Consider adding a response sanitization layer that removes all metadata except the actual data frames."
+  },
+  {
+    "severity": "medium",
+    "location": "pkg/services/publicdashboards/internal/service/service.go",
+    "title": "Public dashboard access token generation has limited entropy and predictable format",
+    "description": "The GenerateAccessToken function generates tokens by creating a UUID v4 and formatting it as a hex string (removing dashes). While UUID v4 provides 122 bits of randomness which is generally adequate, the token format is predictable (exactly 32 hex characters) and the generation only retries 3 times on collision before failing. More critically, the IsValidAccessToken function only checks if the token parses as a UUID, meaning any valid UUID format will pass validation - there's no HMAC or additional integrity check. Combined with the missing-return bug in RequiresExistingAccessToken, this makes the access token the sole security boundary for public dashboard data.",
+    "impact": "The access token is the only authentication mechanism for public dashboards. If tokens are leaked (e.g., through browser history, referrer headers, or access logs), an attacker gains full read access to the dashboard's data including queries to internal datasources. The token cannot be rotated without creating a new public dashboard.",
+    "attack_path": [
+      "1. Attacker observes a public dashboard URL containing the access token in the path",
+      "2. Token may be leaked via HTTP Referer header when dashboard contains external links",
+      "3. Token may appear in server access logs, CDN logs, or browser history",
+      "4. With the token, attacker can query all panels on the dashboard indefinitely",
+      "5. There is no rate limiting or token rotation mechanism to mitigate long-term exposure"
+    ],
+    "evidence": [
+      "pkg/services/publicdashboards/internal/service/service.go:540-546",
+      "pkg/services/publicdashboards/internal/validation/validation.go:45-48",
+      "pkg/services/publicdashboards/internal/api/query.go:54-83"
+    ],
+    "remediation": "Consider adding an HMAC or signature component to access tokens for integrity verification. Implement token rotation capability. Add rate limiting on public dashboard query endpoints. Consider using HTTP POST for access token submission instead of URL path to reduce leakage vectors."
+  }
+]
