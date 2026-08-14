@@ -345,6 +345,18 @@ export const DashboardInteractions = {
     reportDashboardInteraction('move_item', properties);
   },
 
+  // dashboards_section_navigated
+  // when a user switches between tabs or expands/collapses a row to move around a dashboard's
+  // sections. `isEditing` distinguishes tweaks made while shaping the dashboard (edit mode) from
+  // plain view-mode navigation, so we can measure how useful the section-editing feature is.
+  trackSectionNavigated: (properties: {
+    item: 'tab' | 'row';
+    action: 'switch_tab' | 'expand_row' | 'collapse_row';
+    isEditing: boolean;
+  }) => {
+    reportDashboardInteraction('section_navigated', properties);
+  },
+
   // fired when the dashboard scene enters edit mode; source = how it was opened (Edit button vs assistant)
   editSessionStarted: (properties: { dashboard_uid?: string; source: 'assistant' | 'user' }) => {
     reportDashboardInteraction('edit_session_started', properties);

@@ -12,6 +12,7 @@ import { Box, Icon, Tab, TabContent, Tooltip, useElementSelection, usePointerDis
 import { useIsConditionallyHidden } from '../../conditional-rendering/hooks/useIsConditionallyHidden';
 import { useSoloPanelContext } from '../../solo/SoloPanelContext';
 import { isRepeatCloneOrChildOf } from '../../utils/clone';
+import { DashboardInteractions } from '../../utils/interactions';
 import { getDashboardSceneFor, interpolateSectionTitle, useDashboardState } from '../../utils/utils';
 import { SectionVariableControls } from '../VariableControls';
 import { DASHBOARD_DROP_TARGET_KEY_ATTR } from '../types/DashboardDropTarget';
@@ -88,6 +89,15 @@ export function TabItemRenderer({ model }: SceneComponentProps<TabItem>) {
             aria-selected={isActive}
             onChangeTab={(evt) => {
               evt.preventDefault();
+
+              // Only track genuine tab switches, not clicks on the already-active tab.
+              if (!isActive) {
+                DashboardInteractions.trackSectionNavigated({
+                  item: 'tab',
+                  action: 'switch_tab',
+                  isEditing: Boolean(isEditing),
+                });
+              }
 
               const dashboard = getDashboardSceneFor(model);
               dashboard.rememberScrollPos();
