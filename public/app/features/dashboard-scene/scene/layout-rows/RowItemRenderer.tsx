@@ -13,6 +13,7 @@ import { clearButtonStyles, Icon, Tooltip, useElementSelection, usePointerDistan
 import { useIsConditionallyHidden } from '../../conditional-rendering/hooks/useIsConditionallyHidden';
 import { useSoloPanelContext } from '../../solo/SoloPanelContext';
 import { isRepeatCloneOrChildOf } from '../../utils/clone';
+import { DashboardInteractions } from '../../utils/interactions';
 import { useDashboardState, useInterpolatedTitle } from '../../utils/utils';
 import { DashboardScene } from '../DashboardScene';
 import { SectionVariableControls } from '../VariableControls';
@@ -150,6 +151,11 @@ export function RowItemRenderer({ model }: SceneComponentProps<RowItem>) {
             >
               <button
                 onClick={(evt) => {
+                  DashboardInteractions.trackSectionNavigated({
+                    item: 'row',
+                    action: isCollapsed ? 'expand_row' : 'collapse_row',
+                    isEditing,
+                  });
                   model.onCollapseToggle();
                   onClearSelection?.();
                 }}
