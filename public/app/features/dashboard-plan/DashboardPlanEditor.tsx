@@ -1,7 +1,7 @@
 import { css } from '@emotion/css';
 import { useEffect, useMemo, useState } from 'react';
 
-import { type GrafanaTheme2, type SelectableValue } from '@grafana/data';
+import { locationUtil, type GrafanaTheme2, type SelectableValue } from '@grafana/data';
 import { Trans, t } from '@grafana/i18n';
 import { locationService } from '@grafana/runtime';
 import {
@@ -89,7 +89,8 @@ export function DashboardPlanEditor({ datasourceUid }: DashboardPlanEditorProps)
     { value: 'rows', label: t('dashboard-plan.layout.rows', 'Rows'), icon: 'list-ul' },
   ];
 
-  const sectionNoun = plan.layout === 'tabs' ? t('dashboard-plan.noun.tab', 'tab') : t('dashboard-plan.noun.row', 'row');
+  const sectionNoun =
+    plan.layout === 'tabs' ? t('dashboard-plan.noun.tab', 'tab') : t('dashboard-plan.noun.row', 'row');
 
   const handleLayoutChange = (layout: PlanLayout) => {
     setPlan((prev) => setLayout(prev, layout));
@@ -161,7 +162,7 @@ export function DashboardPlanEditor({ datasourceUid }: DashboardPlanEditorProps)
     try {
       const result = await createDashboardFromPlan(plan, datasourceUid);
       dashboardPlanTracking.buildSucceeded(result.uid);
-      locationService.push(result.url);
+      locationService.push(locationUtil.stripBaseFromUrl(result.url));
     } catch (error) {
       dashboardPlanTracking.buildFailed();
       dispatch(

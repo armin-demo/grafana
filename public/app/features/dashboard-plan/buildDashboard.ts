@@ -30,15 +30,19 @@ interface BuiltPanel {
 }
 
 /**
- * Builds a query target that returns data without any external wiring so the
- * generated dashboard renders immediately. TestData uses the random_walk
- * scenario; anything else falls back to the built-in Grafana random walk.
+ * Builds a query target for generated panels. When a datasource is provided,
+ * panels are wired to it (TestData uses the random_walk scenario). When none
+ * is provided, fall back to the built-in Grafana random walk so the dashboard
+ * still renders immediately.
  */
 function buildTarget(dsRef: DataSourceRef | undefined): BuiltTarget {
-  if (dsRef && (dsRef.type === 'grafana-testdata-datasource' || dsRef.type === 'testdata')) {
+  if (!dsRef) {
+    return { refId: 'A', datasource: GRAFANA_RANDOM_WALK, queryType: 'randomWalk' };
+  }
+  if (dsRef.type === 'grafana-testdata-datasource' || dsRef.type === 'testdata') {
     return { refId: 'A', datasource: dsRef, scenarioId: 'random_walk' };
   }
-  return { refId: 'A', datasource: GRAFANA_RANDOM_WALK, queryType: 'randomWalk' };
+  return { refId: 'A', datasource: dsRef };
 }
 
 export function convertPlanToDashboard(plan: DashboardPlan, dsRef?: DataSourceRef): Record<string, unknown> {
@@ -60,7 +64,7 @@ export function convertPlanToDashboard(plan: DashboardPlan, dsRef?: DataSourceRe
     section.panels.forEach((panel, index) => {
       const column = index % 2;
       const rowInSection = Math.floor(index / 2);
-      // `text` panels have no query; every other viz gets a random-walk series.
+      // `text` panels have no query; other visualizations get a datasource target.
       const isTextPanel = panel.vizType === 'text';
       panels.push({
         id: panelId++,

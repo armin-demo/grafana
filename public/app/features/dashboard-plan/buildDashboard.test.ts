@@ -76,6 +76,20 @@ describe('convertPlanToDashboard', () => {
       scenarioId: 'random_walk',
     });
   });
+
+  it('wires non-text panels to the provided datasource', () => {
+    const panels = convertPlanToDashboard(planWith(), {
+      type: 'prometheus',
+      uid: 'prom-1',
+    }).panels as BuiltPanel[];
+    const trend = panels.find((p) => p.title === 'Trend');
+    expect(trend?.datasource).toMatchObject({ type: 'prometheus', uid: 'prom-1' });
+    expect(trend?.targets?.[0]).toMatchObject({
+      datasource: { type: 'prometheus', uid: 'prom-1' },
+    });
+    expect(trend?.targets?.[0].queryType).toBeUndefined();
+    expect(trend?.targets?.[0].scenarioId).toBeUndefined();
+  });
 });
 
 describe('createDashboardFromPlan', () => {
@@ -100,5 +114,16 @@ describe('createDashboardFromPlan', () => {
     const body = post.mock.calls[0][1];
     const trend = (body.dashboard.panels as BuiltPanel[]).find((p) => p.title === 'Trend');
     expect(trend?.targets?.[0].datasource).toMatchObject({ type: 'grafana-testdata-datasource', uid: 'testdata-1' });
+  });
+
+  it('wires panels to a non-testdata datasource resolved from the uid', async () => {
+    getInstanceSettings.mockReturnValue({ type: 'prometheus', uid: 'prom-1' });
+    post.mockResolvedValue({ uid: 'abc', url: '/d/abc' });
+
+    await createDashboardFromPlan(planWith(), 'prom-1');
+
+    const body = post.mock.calls[0][1];
+    const trend = (body.dashboard.panels as BuiltPanel[]).find((p) => p.title === 'Trend');
+    expect(trend?.targets?.[0].datasource).toMatchObject({ type: 'prometheus', uid: 'prom-1' });
   });
 });

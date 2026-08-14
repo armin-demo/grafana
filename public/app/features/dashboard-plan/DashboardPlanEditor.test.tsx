@@ -1,5 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
+import { locationUtil } from '@grafana/data';
+
 import { DashboardPlanEditor } from './DashboardPlanEditor';
 
 const reportInteraction = jest.fn();
@@ -69,5 +71,20 @@ describe('DashboardPlanEditor', () => {
     expect(reportInteraction).toHaveBeenCalledWith('dashboard_plan_build_clicked', expect.any(Object));
     await waitFor(() => expect(push).toHaveBeenCalledWith('/d/new-uid/plan'));
     expect(reportInteraction).toHaveBeenCalledWith('dashboard_plan_build_succeeded', { uid: 'new-uid' });
+  });
+
+  it('strips appSubUrl before navigating to the built dashboard', async () => {
+    const strip = jest.spyOn(locationUtil, 'stripBaseFromUrl').mockReturnValue('/d/new-uid/plan');
+    try {
+      createDashboardFromPlan.mockResolvedValue({ uid: 'new-uid', url: '/grafana/d/new-uid/plan' });
+      render(<DashboardPlanEditor />);
+
+      fireEvent.click(screen.getByTestId('dashboard-plan-build'));
+
+      await waitFor(() => expect(push).toHaveBeenCalledWith('/d/new-uid/plan'));
+      expect(strip).toHaveBeenCalledWith('/grafana/d/new-uid/plan');
+    } finally {
+      strip.mockRestore();
+    }
   });
 });
