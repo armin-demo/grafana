@@ -92,7 +92,11 @@ export function TabItemRenderer({ model }: SceneComponentProps<TabItem>) {
 
               // Only track genuine tab switches, not clicks on the already-active tab.
               if (!isActive) {
-                DashboardInteractions.trackSectionNavigated({ item: 'tab', action: 'switch_tab', isEditing });
+                DashboardInteractions.trackSectionNavigated({
+                  item: 'tab',
+                  action: 'switch_tab',
+                  isEditing: Boolean(isEditing),
+                });
               }
 
               const dashboard = getDashboardSceneFor(model);

@@ -154,7 +154,7 @@ export function RowItemRenderer({ model }: SceneComponentProps<RowItem>) {
                   DashboardInteractions.trackSectionNavigated({
                     item: 'row',
                     action: isCollapsed ? 'expand_row' : 'collapse_row',
-                    isEditing,
+                    isEditing: Boolean(isEditing),
                   });
                   model.onCollapseToggle();
                   onClearSelection?.();
