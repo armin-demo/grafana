@@ -89,6 +89,14 @@ export const BuildDashboardButton = ({ dataSource, size, fill, context }: BuildD
                 }}
               />
               <Menu.Item
+                label={t('datasources.build-a-dashboard-button.plan', 'Plan a dashboard')}
+                icon="apps"
+                url={`dashboard/plan?ds=${dataSource.uid}`}
+                onClick={() => {
+                  trackDsConfigClicked('plan_a_dashboard');
+                }}
+              />
+              <Menu.Item
                 label={t('datasources.build-a-dashboard-button.blank', 'Blank')}
                 icon="plus"
                 url={`dashboard/new-with-ds/${dataSource.uid}`}

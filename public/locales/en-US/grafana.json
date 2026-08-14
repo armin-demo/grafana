@@ -6593,6 +6593,63 @@
       "title": "There are no dashboard links added yet"
     }
   },
+  "dashboard-plan": {
+    "add-first-section": "Add a section",
+    "add-row": "Add row",
+    "add-tab": "Add tab",
+    "build": "Build dashboard",
+    "build-error": "Failed to build dashboard",
+    "default": {
+      "current-latency": "Current latency",
+      "latency": "Latency",
+      "overview": "Overview",
+      "p95-latency": "p95 latency",
+      "requests-over-time": "Requests over time",
+      "title": "New dashboard",
+      "total-requests": "Total requests"
+    },
+    "layout": {
+      "rows": "Rows",
+      "tabs": "Tabs"
+    },
+    "layout-label": "Organize as",
+    "new-section-title": "Section {{number}}",
+    "no-sections": "Your plan is empty",
+    "noun": {
+      "row": "row",
+      "tab": "tab"
+    },
+    "page-subtitle": "Shape the structure — tabs or rows, panels, and their order — before building the dashboard.",
+    "page-title": "Plan a dashboard",
+    "panel": {
+      "delete": "Delete panel",
+      "drag": "Reorder panel",
+      "move-down": "Move panel down",
+      "move-up": "Move panel up",
+      "title-label": "Panel title",
+      "viz-label": "Panel visualization"
+    },
+    "section": {
+      "add-panel": "Add panel",
+      "delete": "Delete {{noun}}",
+      "empty": "No panels yet. Add one to start shaping this section.",
+      "move-down": "Move {{noun}} later",
+      "move-up": "Move {{noun}} earlier",
+      "title-label": "Section title"
+    },
+    "summary": "{{panels}} panels across {{sections}} sections",
+    "title-label": "Dashboard title",
+    "viz": {
+      "barchart": "Bar chart",
+      "bargauge": "Bar gauge",
+      "gauge": "Gauge",
+      "piechart": "Pie chart",
+      "stat": "Stat",
+      "table": "Table",
+      "text": "Text",
+      "timeseries": "Time series"
+    }
+  },
   "dashboard-scene": {
     "ad-hoc-filters-variable-editor": {
       "message-not-supported": "This data source does not support filters.",
@@ -7903,7 +7960,8 @@
     "build-a-dashboard-button": {
       "blank": "Blank",
       "build-a-dashboard": "Build a dashboard",
-      "from-suggestions": "From suggestions"
+      "from-suggestions": "From suggestions",
+      "plan": "Plan a dashboard"
     },
     "build-categories": {
       "categories": {

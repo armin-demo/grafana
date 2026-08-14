@@ -127,6 +127,13 @@ export function getAppRoutes(): RouteDescriptor[] {
       ),
     },
     {
+      path: '/dashboard/plan',
+      roles: () => contextSrv.evaluatePermission([AccessControlAction.DashboardsCreate]),
+      component: SafeDynamicImport(
+        () => import(/* webpackChunkName: "DashboardPlanPage"*/ 'app/features/dashboard-plan/DashboardPlanPage')
+      ),
+    },
+    {
       path: DATASOURCES_ROUTES.List,
       component: () => <Navigate replace to={CONNECTIONS_ROUTES.DataSources} />,
     },

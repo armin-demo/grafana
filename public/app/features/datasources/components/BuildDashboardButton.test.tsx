@@ -228,6 +228,17 @@ describe('BuildDashboardButton', () => {
       );
     });
 
+    it('should render "Plan a dashboard" linking to the plan editor and fire tracking', () => {
+      render(<BuildDashboardButton {...defaultProps} />);
+      fireEvent.click(screen.getByRole('button', { name: /Build a dashboard/i }));
+
+      const item = screen.getByRole('menuitem', { name: 'Plan a dashboard' });
+      expect(item).toHaveAttribute('href', 'dashboard/plan?ds=test-uid');
+
+      fireEvent.click(item);
+      expect(trackDsConfigClicked).toHaveBeenCalledWith('plan_a_dashboard');
+    });
+
     it('should dispatch warning notification when onFetchComplete reports no dashboards', () => {
       render(<BuildDashboardButton {...defaultProps} />);
 
