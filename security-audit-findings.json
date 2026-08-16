@@ -1,0 +1,143 @@
+[
+  {
+    "id": "GRAF-SEC-001",
+    "severity": "HIGH",
+    "location": "pkg/tsdb/mssql/sqleng/connection.go:124-127",
+    "title": "MSSQL Connection String Injection via Unescaped Server and Database Parameters",
+    "description": "The MSSQL datasource constructs connection strings by directly interpolating the server hostname (addr.Host) and database name (dsInfo.Database) without ODBC escaping. The connection string uses semicolons as parameter delimiters, but these values may contain semicolons. ODBC escaping (via escapeOdbcValue) is correctly applied to user and password fields but is never applied to the server or database fields, creating an inconsistent and exploitable gap. The MSSQL URL validator (pkg/api/datasource/validation/validation.go and pkg/tsdb/mssql/utils/utils.go) explicitly allows semicolons in the URL via the regex pattern (?:;.+)?$, meaning a datasource URL like 'myhost;Integrated Security=true' passes validation. The semicolons then flow through SplitHostPortDefault into addr.Host and into the final connection string, injecting arbitrary connection parameters.",
+    "impact": "A datasource administrator (or an attacker who compromises an admin API token or exploits an XSS/CSRF against an admin session) can inject arbitrary MSSQL connection string parameters by setting a malicious datasource URL or database name. This enables: (1) Authentication bypass by injecting 'Integrated Security=true' to use the Grafana server's Windows service account instead of SQL credentials, potentially escalating from limited SQL auth to Windows domain-level database access. (2) Encryption downgrade by injecting 'encrypt=disable' to force unencrypted connections, enabling MITM attacks. (3) Server redirection by injecting a different server address, enabling SSRF against internal MSSQL instances.",
+    "attack_path": [
+      "1. Attacker has datasource admin privileges (or compromises admin credentials)",
+      "2. Attacker creates/edits an MSSQL datasource with URL: 'targethost;Integrated Security=true'",
+      "3. URL passes validation via parseURL regex that explicitly allows semicolons",
+      "4. SplitHostPortDefault extracts 'targethost;Integrated Security=true' as addr.Host",
+      "5. generateConnectionString builds: 'server=targethost;Integrated Security=true;database=mydb;user id=...'",
+      "6. MSSQL driver parses semicolon-delimited string, treats 'Integrated Security=true' as separate parameter",
+      "7. Connection uses Windows Integrated Security instead of the configured SQL credentials"
+    ],
+    "evidence": [
+      {
+        "file": "pkg/tsdb/mssql/sqleng/connection.go",
+        "line": "124-127",
+        "code": "connStr := fmt.Sprintf(\"server=%s;database=%s;\",\n\taddr.Host,\n\tdsInfo.Database,\n)"
+      },
+      {
+        "file": "pkg/tsdb/mssql/sqleng/connection.go",
+        "line": "23-25",
+        "code": "func odbcNeedsEscape(s string) bool {\n\treturn strings.ContainsAny(s, \";}\") || s != strings.TrimSpace(s)\n}",
+        "note": "This escape check exists but is only applied to user/password, never to server/database"
+      },
+      {
+        "file": "pkg/tsdb/mssql/sqleng/connection.go",
+        "line": "151-158",
+        "code": "default:\n\tuser := dsInfo.User\n\tpass := dsInfo.DecryptedSecureJSONData[\"password\"]\n\tif odbcNeedsEscape(pass) || odbcNeedsEscape(user) {\n\t\tuser = escapeOdbcValue(user)\n\t\tpass = escapeOdbcValue(pass)\n\t\tconnStr = \"odbc:\" + strings.TrimPrefix(connStr, \"odbc:\") + fmt.Sprintf(\"user id=%s;password=%s;\", user, pass)\n\t} else {\n\t\tconnStr += fmt.Sprintf(\"user id=%s;password=%s;\", user, pass)\n\t}",
+        "note": "ODBC escaping applied to user/pass but server and database at line 124 are already unescaped"
+      },
+      {
+        "file": "pkg/tsdb/mssql/utils/utils.go",
+        "line": "48-53",
+        "code": "reODBC := regexp.MustCompile(`^[^\\\\:]+(?:\\\\[^:]+)?(?::\\d+)?(?:;.+)?$`)\nvar host string\nswitch {\ncase reODBC.MatchString(u):\n\tlogger.Debug(\"Recognized as ODBC URL format\", \"url\", u)\n\thost = u",
+        "note": "URL parser explicitly allows semicolons, entire string including semicolons used as host"
+      },
+      {
+        "file": "pkg/api/datasource/validation/validation.go",
+        "line": "72-74",
+        "code": "case \"mssql\":\n\tu, err = parseURL(urlStr, logger)",
+        "note": "Validation uses same parseURL that allows semicolons, providing false sense of security"
+      }
+    ],
+    "remediation": "Apply ODBC escaping to ALL connection string values, not just user and password. In generateConnectionString, either: (1) Apply escapeOdbcValue to addr.Host and dsInfo.Database before interpolation, or (2) Use the ODBC connection string prefix 'odbc:' consistently and brace-escape all values, or (3) Strip semicolons from the server and database values before constructing the connection string, and reject datasource URLs containing semicolons in the host portion."
+  },
+  {
+    "id": "GRAF-SEC-002",
+    "severity": "HIGH",
+    "location": "pkg/tsdb/grafana-postgresql-datasource/macros.go, pkg/tsdb/mssql/sqleng/macros.go",
+    "title": "PostgreSQL and MSSQL Datasources Missing Restricted Function Checks Present in MySQL",
+    "description": "The MySQL datasource implements a restrictedRegExp check (pkg/tsdb/mysql/macros.go:17) that blocks dangerous functions: SHOW GRANTS, SESSION_USER(), CURRENT_USER(), SYSTEM_USER(), and USER(). Neither the PostgreSQL datasource (pkg/tsdb/grafana-postgresql-datasource/macros.go) nor the MSSQL datasource (pkg/tsdb/mssql/sqleng/macros.go) implement any equivalent restricted function check. Both datasources send user-provided raw SQL directly to the database after only macro interpolation and comment stripping. PostgreSQL has dangerous server-side functions like pg_read_file(), pg_ls_dir(), pg_stat_file(), lo_import()/lo_export(), and COPY ... TO PROGRAM. MSSQL has dangerous functions/procedures like xp_cmdshell, OPENROWSET, OPENDATASOURCE, sp_OACreate, xp_regread, and xp_dirtree. These functions can read arbitrary files, enumerate filesystems, access external data sources, or in some cases execute operating system commands on the database server.",
+    "impact": "Dashboard editors who have permission to write raw SQL queries can leverage these unblocked dangerous functions to: (1) Read arbitrary files from the database server filesystem (pg_read_file in PostgreSQL, xp_cmdshell/OPENROWSET in MSSQL). (2) Enumerate the server filesystem structure (pg_ls_dir in PostgreSQL, xp_dirtree in MSSQL). (3) Execute OS commands on the database server (COPY TO PROGRAM in PostgreSQL, xp_cmdshell in MSSQL) if the database user has sufficient privileges. (4) Access external data sources via OPENROWSET/OPENDATASOURCE in MSSQL, potentially reaching internal services not directly accessible from Grafana. This represents an inconsistent security posture where MySQL datasources have defense-in-depth protections that PostgreSQL and MSSQL datasources lack entirely.",
+    "attack_path": [
+      "1. Attacker has Grafana Editor role (can create/edit dashboard panels)",
+      "2. Attacker creates a panel with PostgreSQL datasource and raw SQL: SELECT pg_read_file('/etc/passwd')",
+      "3. PostgreSQL macro engine (Interpolate method) strips comments and expands macros but performs no restricted function check",
+      "4. Query is sent directly to PostgreSQL via pgx Exec(): c.Conn().PgConn().Exec(ctx, query)",
+      "5. If the PostgreSQL user has FILE privileges, the contents of /etc/passwd are returned in the query results",
+      "6. Similarly for MSSQL: EXEC xp_cmdshell 'whoami' would execute OS commands if xp_cmdshell is enabled"
+    ],
+    "evidence": [
+      {
+        "file": "pkg/tsdb/mysql/macros.go",
+        "line": "17",
+        "code": "var restrictedRegExp = regexp.MustCompile(`(?im)([\\s]*show[\\s]+grants|[\\s,]session_user\\([^\\)]*\\)|[\\s,]current_user(\\([^\\)]*\\))?|[\\s,]system_user\\([^\\)]*\\)|[\\s,]user\\([^\\)]*\\))([\\s,;]|$)`)",
+        "note": "MySQL HAS this check, PostgreSQL and MSSQL do NOT"
+      },
+      {
+        "file": "pkg/tsdb/mysql/macros.go",
+        "line": "116-119",
+        "code": "matches := restrictedRegExp.FindAllStringSubmatch(sql, 1)\nif len(matches) > 0 {\n\tm.logger.Error(\"Show grants, session_user(), current_user(), system_user() or user() not allowed in query\")\n\treturn \"\", fmt.Errorf(\"invalid query - %s\", m.userError)\n}",
+        "note": "MySQL checks BEFORE comment stripping and macro interpolation"
+      },
+      {
+        "file": "pkg/tsdb/grafana-postgresql-datasource/macros.go",
+        "line": "142-183",
+        "code": "func (m *postgresMacroEngine) Interpolate(query *backend.DataQuery, timeRange backend.TimeRange, sql string) (string, error) {\n\tsql = stripSQLComments(sql)\n\trExp, _ := regexp.Compile(sExpr)\n\tvar macroError error\n\tsql = m.ReplaceAllStringSubmatchFunc(rExp, sql, func(groups []string) string {\n\t\t...\n\t})\n\treturn sql, nil\n}",
+        "note": "No restricted function check exists - comments stripped and macros expanded, but no function blocklist"
+      },
+      {
+        "file": "pkg/tsdb/mssql/sqleng/macros.go",
+        "line": "117-145",
+        "code": "func (m *msSQLMacroEngine) Interpolate(query *backend.DataQuery, timeRange backend.TimeRange, sql string) (string, error) {\n\tsql = stripSQLComments(sql)\n\trExp, _ := regexp.Compile(sExpr)\n\tvar macroError error\n\tsql = m.ReplaceAllStringSubmatchFunc(rExp, sql, func(groups []string) string {\n\t\t...\n\t})\n\treturn sql, nil\n}",
+        "note": "No restricted function check exists - same pattern as PostgreSQL"
+      },
+      {
+        "file": "pkg/tsdb/grafana-postgresql-datasource/sqleng/sql_engine.go",
+        "line": "208",
+        "code": "mrr := c.Conn().PgConn().Exec(ctx, query)",
+        "note": "Raw SQL executed directly against PostgreSQL without parameterization"
+      },
+      {
+        "file": "pkg/tsdb/mssql/sqleng/sql_engine.go",
+        "line": "360",
+        "code": "rows, err := db.QueryContext(queryContext, interpolatedQuery)",
+        "note": "Raw SQL executed directly against MSSQL without parameterization"
+      }
+    ],
+    "remediation": "Add database-specific restricted function checks to both PostgreSQL and MSSQL macro engines, matching the defense-in-depth pattern established by MySQL. For PostgreSQL, block at minimum: pg_read_file, pg_read_binary_file, pg_ls_dir, pg_stat_file, lo_import, lo_export, pg_terminate_backend, and COPY ... TO PROGRAM patterns. For MSSQL, block at minimum: xp_cmdshell, OPENROWSET, OPENDATASOURCE, sp_OACreate, sp_OAMethod, xp_regread, xp_regwrite, xp_dirtree, xp_fileexist, xp_subdirs. Apply these checks AFTER comment stripping (unlike MySQL's current ordering which is a known TOCTOU issue) to ensure comments cannot be used to bypass the checks."
+  },
+  {
+    "id": "GRAF-SEC-003",
+    "severity": "HIGH",
+    "location": "pkg/tsdb/grafana-postgresql-datasource/sqleng/sql_engine.go:208, pkg/tsdb/mssql/sqleng/sql_engine.go:360",
+    "title": "PostgreSQL and MSSQL Execute Multi-Statement SQL Without Restriction",
+    "description": "Both the PostgreSQL and MSSQL datasource SQL engines execute user-provided SQL queries directly without any multi-statement restriction. PostgreSQL uses pgx's Exec() method (line 208) which supports multi-result queries via the PostgreSQL simple query protocol, enabling execution of multiple SQL statements in a single call separated by semicolons. MSSQL uses database/sql's QueryContext() which similarly supports multiple statements in T-SQL batches. Unlike typical SQL parameterization or prepared statement approaches, this raw execution path allows stacking arbitrary SQL statements including DDL (CREATE, DROP, ALTER), DML (INSERT, UPDATE, DELETE), and administrative commands. While dashboard editors can write arbitrary SQL, the lack of statement-type restrictions means a single query field can execute destructive operations that go far beyond SELECT queries.",
+    "impact": "Dashboard editors can execute destructive multi-statement SQL batches through the query editor. For example: 'SELECT 1; DROP TABLE users; --' would execute both the SELECT and the DROP TABLE. This is especially dangerous in environments where: (1) Dashboard editors have higher SQL privileges than intended (common in shared database accounts). (2) Public dashboards expose queries that could be manipulated via template variable injection. (3) Provisioned dashboards from untrusted sources contain malicious SQL. The PostgreSQL simple query protocol (used by pgx.Exec) is particularly permissive, executing all statements in the batch and returning results from each.",
+    "attack_path": [
+      "1. Attacker has Grafana Editor role or can manipulate a template variable that flows into raw SQL",
+      "2. Attacker crafts a multi-statement query: SELECT * FROM data; INSERT INTO audit_bypass VALUES('hacked'); DROP TABLE logs;",
+      "3. Query passes through macro interpolation without any statement-type validation",
+      "4. PostgreSQL: pgx Exec() sends all three statements via simple query protocol, all execute",
+      "5. MSSQL: QueryContext sends the T-SQL batch, all statements execute",
+      "6. Destructive operations complete alongside the legitimate SELECT"
+    ],
+    "evidence": [
+      {
+        "file": "pkg/tsdb/grafana-postgresql-datasource/sqleng/sql_engine.go",
+        "line": "201-212",
+        "code": "func (e *DataSourceHandler) execQuery(ctx context.Context, query string) ([]*pgconn.Result, error) {\n\tc, err := e.pool.Acquire(ctx)\n\tif err != nil {\n\t\treturn nil, backend.DownstreamErrorf(\"failed to acquire connection: %w\", err)\n\t}\n\tdefer c.Release()\n\n\tmrr := c.Conn().PgConn().Exec(ctx, query)\n\tdefer mrr.Close()\n\treturn mrr.ReadAll()\n}",
+        "note": "Uses MultiResultReader - explicitly designed for multi-statement execution"
+      },
+      {
+        "file": "pkg/tsdb/grafana-postgresql-datasource/sqleng/sql_engine.go",
+        "line": "534-623",
+        "code": "func convertResultsToFrame(results []*pgconn.Result, rowLimit int64) (*data.Frame, error) {\n\t...\n\tfor _, result := range results {\n\t\tif len(result.FieldDescriptions) == 0 {\n\t\t\tcontinue\n\t\t}\n\t\t...",
+        "note": "Iterates over multiple results from multi-statement execution, silently skipping non-SELECT results"
+      },
+      {
+        "file": "pkg/tsdb/mssql/sqleng/sql_engine.go",
+        "line": "360",
+        "code": "rows, err := db.QueryContext(queryContext, interpolatedQuery)",
+        "note": "T-SQL batches with semicolons execute all statements"
+      }
+    ],
+    "remediation": "For defense-in-depth, consider: (1) Using PostgreSQL's extended query protocol (pgx.Query with parameters) instead of simple query protocol (pgx.Exec) to limit execution to single statements. (2) Adding a statement-type check that rejects queries containing DDL keywords (CREATE, DROP, ALTER, TRUNCATE) or dangerous DML (DELETE without WHERE, UPDATE without WHERE) after comment stripping. (3) For MSSQL, use prepared statements or add explicit multi-statement detection. Note that this should be a configurable option since some legitimate use cases involve CTEs and multi-statement queries."
+  }
+]
