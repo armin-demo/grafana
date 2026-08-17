@@ -7,6 +7,9 @@ awsconfig
 /.awcache
 /dist
 /public/build
+/public/build-rspack
+/public/build-swagger
+/public/build-swagger-rspack
 /emails/dist
 /reports
 /e2e/tmp
@@ -190,6 +193,7 @@ manifest-react19.json
 
 # Ignore compilation stats from `yarn stats`
 compilation-stats.json
+compilation-stats-rspack.json
 
 # e2e tests
 /packages/grafana-e2e/cypress/screenshots
