@@ -7,6 +7,13 @@ import { FilterStatsPlugin } from './plugins/FilterStatsPlugin.ts';
 import type { Env } from './webpack.common.ts';
 import prodConfig from './webpack.prod.ts';
 
+/**
+ * Webpack bundle-stats entry (yarn build:stats / build:smolstats).
+ *
+ * Once rspack is the day-to-day frontend build, prefer the rspack twins:
+ * scripts/rspack/rspack.stats.ts and yarn build:stats:rspack / build:smolstats:rspack / stats:rspack.
+ * grafana/grafana#129728 tracks the config migration but not this stats gap.
+ */
 export default (env: Env = {}) => {
   const bundleAnalyzerOpts: BundleAnalyzerPlugin.Options = env.filtered
     ? {

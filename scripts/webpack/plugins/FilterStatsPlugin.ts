@@ -1,13 +1,27 @@
 import fs from 'fs';
-import type { Compiler } from 'webpack';
+import path from 'path';
 
-const STATS_PATH = 'public/build/bundle-stats.html';
-const STATS_PATH_FILT = 'public/build/bundle-stats-filtered.html';
+const DEFAULT_STATS_FILE = 'bundle-stats.html';
+const DEFAULT_FILTERED_FILE = 'bundle-stats-filtered.html';
 
-interface BundleNode {
+export interface BundleNode {
   label: string;
   parsedSize: number;
   groups?: BundleNode[];
+}
+
+/** Minimal compiler surface shared by webpack and rspack. */
+interface StatsCompiler {
+  options?: {
+    output?: {
+      path?: string;
+    };
+  };
+  hooks: {
+    done: {
+      tap: (name: string, callback: () => void) => void;
+    };
+  };
 }
 
 export class FilterStatsPlugin {
@@ -23,22 +37,38 @@ export class FilterStatsPlugin {
     this.minDominance = minDominance;
   }
 
-  apply(compiler: Compiler) {
+  apply(compiler: StatsCompiler) {
     compiler.hooks.done.tap('FilterStatsPlugin', () => {
-      if (this.exclude == null) {
-        fs.copyFileSync(STATS_PATH, STATS_PATH_FILT);
-      } else {
-        const exclude = this.exclude;
-        const statsHTML = fs.readFileSync(STATS_PATH, 'utf8');
-        const filteredStatsHTML = statsHTML.replace(/(window.chartData = )(\[.*?\])(;)/, (_, head, data, tail) => {
-          const nodes: BundleNode[] = JSON.parse(data);
-          const filtered = nodes.filter((node) => !this.pathContains(node, node.parsedSize, exclude));
-          return head + JSON.stringify(filtered) + tail;
-        });
-
-        fs.writeFileSync(STATS_PATH_FILT, filteredStatsHTML);
-      }
+      const outputPath = compiler.options?.output?.path ?? path.resolve('public/build');
+      this.writeFilteredReport({
+        statsPath: path.join(outputPath, DEFAULT_STATS_FILE),
+        filteredPath: path.join(outputPath, DEFAULT_FILTERED_FILE),
+      });
     });
+  }
+
+  /** Filter chartData in place. Exposed for unit tests without a full compile. */
+  writeFilteredReport({
+    statsPath,
+    filteredPath,
+  }: {
+    statsPath: string;
+    filteredPath: string;
+  }) {
+    if (this.exclude == null) {
+      fs.copyFileSync(statsPath, filteredPath);
+      return;
+    }
+
+    const exclude = this.exclude;
+    const statsHTML = fs.readFileSync(statsPath, 'utf8');
+    const filteredStatsHTML = statsHTML.replace(/(window.chartData = )(\[.*?\])(;)/, (_, head, data, tail) => {
+      const nodes: BundleNode[] = JSON.parse(data);
+      const filtered = nodes.filter((node) => !this.pathContains(node, node.parsedSize, exclude));
+      return head + JSON.stringify(filtered) + tail;
+    });
+
+    fs.writeFileSync(filteredPath, filteredStatsHTML);
   }
 
   pathContains(node: BundleNode, rootParsedSize: number, exclude: RegExp): boolean {
