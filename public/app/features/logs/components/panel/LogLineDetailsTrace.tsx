@@ -24,6 +24,11 @@ interface TempoQuery extends DataQuery {
   filters: unknown[];
 }
 
+interface TestDataTraceQuery extends DataQuery {
+  scenarioId: string;
+  spanCount: number;
+}
+
 import { useLogListContext } from './LogListContext';
 import { getTraceIdFromTraceQlQuery, type EmbeddedInternalLink } from './links';
 
@@ -36,6 +41,9 @@ interface Props {
 export const LogLineDetailsTrace = ({ timeRange, timeZone, traceRef }: Props) => {
   const [dataSource, setDataSource] = useState<DataSourceApi | null>(null);
   const [dataFrames, setDataFrames] = useState<DataFrame[] | null | undefined>(undefined);
+  // TraceView virtualization needs a concrete scroll parent; without it ListView only draws
+  // initial rows and ControlledCollapse overflow:hidden clips the timeline.
+  const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(null);
   const { app } = useLogListContext();
   const styles = useStyles2(getStyles);
 
@@ -57,18 +65,31 @@ export const LogLineDetailsTrace = ({ timeRange, timeZone, traceRef }: Props) =>
     setDataFrames(undefined);
     // Tempo only returns renderable trace spans for a bare trace ID, so unwrap `{ trace:id = "..." }` lookups.
     const traceQuery = getTraceIdFromTraceQlQuery(traceRef.query) ?? traceRef.query;
-    const request: DataQueryRequest<TempoQuery> = {
+    const isTestData =
+      dataSource.type === 'grafana-testdata-datasource' || dataSource.meta?.id === 'grafana-testdata-datasource';
+    // TestData can generate a tall multi-span frame so the embedded TraceView scroll viewport is exercisable
+    // without a Tempo backend (derived-field demos / local verification).
+    const targets: Array<TempoQuery | TestDataTraceQuery> = isTestData
+      ? [
+          {
+            refId: `log-details-trace-${traceQuery}`,
+            scenarioId: 'trace',
+            spanCount: 80,
+          },
+        ]
+      : [
+          {
+            query: traceQuery,
+            queryType: 'traceql',
+            refId: `log-details-trace-${traceQuery}`,
+            tableType: 'traces',
+            filters: [],
+          },
+        ];
+    const request: DataQueryRequest<TempoQuery | TestDataTraceQuery> = {
       app,
       requestId: `log-details-trace-${traceQuery}`,
-      targets: [
-        {
-          query: traceQuery,
-          queryType: 'traceql',
-          refId: `log-details-trace-${traceQuery}`,
-          tableType: 'traces',
-          filters: [],
-        },
-      ],
+      targets,
       interval: '',
       intervalMs: 0,
       range: timeRange,
@@ -101,7 +122,19 @@ export const LogLineDetailsTrace = ({ timeRange, timeZone, traceRef }: Props) =>
   return (
     <div>
       {dataSource && Array.isArray(dataFrames) && traceProp && (
-        <TraceView dataFrames={dataFrames} traceProp={traceProp} datasource={dataSource} timeRange={timeRange} />
+        <div
+          className={styles.scrollWrapper}
+          data-testid="log-line-details-trace-scroll"
+          ref={setScrollElement}
+        >
+          <TraceView
+            dataFrames={dataFrames}
+            traceProp={traceProp}
+            datasource={dataSource}
+            timeRange={timeRange}
+            scrollElement={scrollElement ?? undefined}
+          />
+        </div>
       )}
       {dataFrames === null && (
         <div className={styles.message}>
@@ -127,6 +160,12 @@ export const LogLineDetailsTrace = ({ timeRange, timeZone, traceRef }: Props) =>
 };
 
 const getStyles = (theme: GrafanaTheme2) => ({
+  // Match other log-details sections (50vh) but use a fixed height so TraceView's
+  // ListView (height: 100%) has a real viewport to virtualize and scroll against.
+  scrollWrapper: css({
+    height: '50vh',
+    overflow: 'auto',
+  }),
   message: css({
     display: 'flex',
     gap: theme.spacing(1),
