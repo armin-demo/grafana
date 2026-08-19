@@ -65,7 +65,7 @@ jest.mock('@grafana/runtime/unstable', () => ({
 
 jest.mock('./LogListContext');
 jest.mock('app/features/explore/TraceView/TraceView', () => ({
-  TraceView: () => <div>Trace view</div>,
+  TraceView: () => <div data-testid="trace-view-mock">Trace view</div>,
 }));
 
 afterAll(() => {
@@ -922,6 +922,7 @@ describe('LogLineDetails', () => {
     await userEvent.click(screen.getByText('Trace'));
 
     expect(await screen.findByText('Trace view')).toBeInTheDocument();
+    expect(screen.getByTestId('log-line-details-trace-container')).toBeInTheDocument();
   });
 
   test('Requests the trace by ID when the derived field uses a TraceQL trace-id lookup', async () => {

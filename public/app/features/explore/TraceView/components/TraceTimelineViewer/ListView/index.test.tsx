@@ -36,7 +36,7 @@ const renderItem: TListViewProps['itemRenderer'] = (itemKey, styles, itemIndex, 
   );
 };
 
-const props = {
+const baseProps = {
   dataLength: DATA_LENGTH,
   getIndexFromKey: Number,
   getKeyFromIndex: String,
@@ -46,20 +46,32 @@ const props = {
   itemsWrapperClassName: 'SomeClassName',
   viewBuffer: 10,
   viewBufferMin: 5,
-  windowScroller: true,
   redraw: {},
 };
 
 describe('<ListView />', () => {
-  beforeEach(() => {
-    render(<ListView {...props} />);
+  describe('windowScroller', () => {
+    beforeEach(() => {
+      render(<ListView {...baseProps} windowScroller />);
+    });
+
+    it('renders without exploding', () => {
+      expect(screen.getByTestId('ListView')).toBeInTheDocument();
+    });
+
+    it('renders the correct number of items', () => {
+      expect(screen.getAllByTestId('item').length).toBe(DATA_LENGTH);
+    });
   });
 
-  it('renders without exploding', () => {
-    expect(screen.getByTestId('ListView')).toBeInTheDocument();
-  });
+  describe('self-scroll without scrollElement', () => {
+    it('configures the list root as its own scroll parent', () => {
+      render(<ListView {...baseProps} windowScroller={false} />);
 
-  it('renders the correct number of items', () => {
-    expect(screen.getAllByTestId('item').length).toBe(DATA_LENGTH);
+      const listView = screen.getByTestId('ListView');
+      expect(listView).toBeInTheDocument();
+      expect(listView).toHaveStyle({ height: '100%', overflowY: 'auto' });
+      expect(screen.getAllByTestId('item').length).toBe(DATA_LENGTH);
+    });
   });
 });

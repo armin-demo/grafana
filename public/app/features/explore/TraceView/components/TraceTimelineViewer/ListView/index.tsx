@@ -95,8 +95,9 @@ export type TListViewProps = {
    */
   windowScroller?: boolean;
   /**
-   * You need to pass in scrollElement when windowScroller is set to false.
-   * This element is responsible for tracking scrolling for lazy loading.
+   * Optional external scroll parent when `windowScroller` is false (e.g. Explore's
+   * panel scroller). When omitted, the ListView root scrolls itself — callers must
+   * give that root a concrete height so `height: 100%` resolves.
    */
   scrollElement?: Element;
 };
@@ -212,10 +213,17 @@ export default class ListView extends React.Component<TListViewProps> {
       }
       window.addEventListener('scroll', this._onScroll);
       this._windowScrollListenerAdded = true;
-    } else {
-      // The wrapper element should be the one that handles the scrolling. Once we are not using scroll-canvas we can remove this.
+      return;
+    }
+
+    if (this.props.scrollElement) {
+      // External ancestor scroller (Explore): track that element instead of the list root.
       this._wrapperElm = this.props.scrollElement;
-      this._wrapperElm?.addEventListener('scroll', this._onScroll);
+    }
+    this._wrapperElm?.addEventListener('scroll', this._onScroll);
+    // First paint used `initialDraw` because the scroll parent was unknown; remeasure now.
+    if (this._wrapperElm) {
+      this._positionList();
     }
   }
 
@@ -230,8 +238,13 @@ export default class ListView extends React.Component<TListViewProps> {
     // check if the scrollElement changes and update its scroll listener
     if (prevProps.scrollElement !== this.props.scrollElement) {
       prevProps.scrollElement?.removeEventListener('scroll', this._onScroll);
-      this._wrapperElm = this.props.scrollElement;
+      this._wrapperElm?.removeEventListener('scroll', this._onScroll);
+      if (this.props.scrollElement) {
+        this._wrapperElm = this.props.scrollElement;
+      }
+      // When cleared, keep the list root as scroll parent (set via `_initWrapper`).
       this._wrapperElm?.addEventListener('scroll', this._onScroll);
+      this._positionList();
     }
   }
 
@@ -348,11 +361,20 @@ export default class ListView extends React.Component<TListViewProps> {
   };
 
   _initWrapper = (elm: HTMLElement | TNil) => {
-    if (!this.props.windowScroller) {
+    if (this.props.windowScroller) {
+      this._wrapperElm = elm;
+      if (elm) {
+        this._viewHeight = elm.clientHeight;
+      }
       return;
     }
-    this._wrapperElm = elm;
+    // External scrollElement is wired in componentDidMount/Update.
+    if (this.props.scrollElement) {
+      return;
+    }
+    // Self-scroll: this root is the scroll parent (`height: 100%` + `overflow: auto`).
     if (elm) {
+      this._wrapperElm = elm;
       this._viewHeight = elm.clientHeight;
     }
   };
