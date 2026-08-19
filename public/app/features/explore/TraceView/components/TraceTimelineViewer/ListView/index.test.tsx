@@ -73,5 +73,19 @@ describe('<ListView />', () => {
       expect(listView).toHaveStyle({ height: '100%', overflowY: 'auto' });
       expect(screen.getAllByTestId('item').length).toBe(DATA_LENGTH);
     });
+
+    it('scrolls the list root when scrollToIndex is called', () => {
+      const ref = React.createRef<ListView>();
+      render(<ListView {...baseProps} ref={ref} windowScroller={false} />);
+
+      const listView = screen.getByTestId('ListView');
+      const scrollTo = jest.fn();
+      listView.scrollTo = scrollTo;
+
+      ref.current?.scrollToIndex(3, 0);
+
+      expect(scrollTo).toHaveBeenCalledTimes(1);
+      expect(scrollTo).toHaveBeenCalledWith({ top: expect.any(Number) });
+    });
   });
 });
