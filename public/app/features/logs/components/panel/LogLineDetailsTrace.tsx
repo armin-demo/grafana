@@ -101,7 +101,11 @@ export const LogLineDetailsTrace = ({ timeRange, timeZone, traceRef }: Props) =>
   return (
     <div>
       {dataSource && Array.isArray(dataFrames) && traceProp && (
-        <TraceView dataFrames={dataFrames} traceProp={traceProp} datasource={dataSource} timeRange={timeRange} />
+        // Concrete height + flex chain so TraceView's ListView can self-scroll and virtualize
+        // long traces instead of stopping after the initialDraw buffer (grafana#130948).
+        <div className={styles.traceContainer} data-testid="log-line-details-trace-container">
+          <TraceView dataFrames={dataFrames} traceProp={traceProp} datasource={dataSource} timeRange={timeRange} />
+        </div>
       )}
       {dataFrames === null && (
         <div className={styles.message}>
@@ -131,5 +135,23 @@ const getStyles = (theme: GrafanaTheme2) => ({
     display: 'flex',
     gap: theme.spacing(1),
     alignItems: 'center',
+  }),
+  traceContainer: css({
+    height: `min(70vh, ${theme.spacing(75)})`,
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column',
+    // TraceView renders a fragment (header + timeline). Give the timeline the remaining
+    // height so ListView's `height: 100%` resolves and it becomes the scroll parent.
+    '& [class*="TraceTimelineViewer"]': {
+      flex: 1,
+      minHeight: 0,
+      display: 'flex',
+      flexDirection: 'column',
+    },
+    '& [data-testid="ListView"]': {
+      flex: 1,
+      minHeight: 0,
+    },
   }),
 });
