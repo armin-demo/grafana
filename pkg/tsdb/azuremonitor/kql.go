@@ -13,8 +13,10 @@ func escapeKQLString(s string) string {
 	return strings.ReplaceAll(s, `'`, `''`)
 }
 
+// quoteKQLString emits a Kusto verbatim literal. Doubled quotes escape '
+// only in @'...' form; ordinary '...' literals use \' and treat \ as escape.
 func quoteKQLString(s string) string {
-	return "'" + escapeKQLString(s) + "'"
+	return "@'" + escapeKQLString(s) + "'"
 }
 
 func validateMetricNamespace(ns string) error {

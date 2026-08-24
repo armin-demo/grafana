@@ -151,7 +151,7 @@ func TestListRegionsForNamespace(t *testing.T) {
 	t.Run("narrows by resourceGroup when provided", func(t *testing.T) {
 		body := `{"data":{"columns":[{"name":"location","type":"string"}],"rows":[["westeurope"]]}}`
 		srv := argTestServer(t, body, func(kql string) {
-			require.Contains(t, kql, "resourceGroup =~ 'rg1'")
+			require.Contains(t, kql, "resourceGroup =~ @'rg1'")
 		})
 		defer srv.Close()
 
@@ -166,7 +166,7 @@ func TestListResourceNamesForNamespace(t *testing.T) {
 	t.Run("returns resource names", func(t *testing.T) {
 		body := `{"data":{"columns":[{"name":"name","type":"string"}],"rows":[["vm-a"],["vm-b"],["vm-c"]]}}`
 		srv := argTestServer(t, body, func(kql string) {
-			require.Contains(t, kql, "resourceGroup =~ 'rg1'")
+			require.Contains(t, kql, "resourceGroup =~ @'rg1'")
 			require.Contains(t, kql, "project name")
 		})
 		defer srv.Close()
@@ -180,7 +180,7 @@ func TestListResourceNamesForNamespace(t *testing.T) {
 	t.Run("narrows by region when provided", func(t *testing.T) {
 		body := `{"data":{"columns":[{"name":"name","type":"string"}],"rows":[["vm-a"]]}}`
 		srv := argTestServer(t, body, func(kql string) {
-			require.Contains(t, kql, "location =~ 'westeurope'")
+			require.Contains(t, kql, "location =~ @'westeurope'")
 		})
 		defer srv.Close()
 

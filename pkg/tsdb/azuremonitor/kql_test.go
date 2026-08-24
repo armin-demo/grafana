@@ -14,8 +14,10 @@ func TestEscapeKQLString(t *testing.T) {
 }
 
 func TestQuoteKQLString(t *testing.T) {
-	require.Equal(t, `'rg1'`, quoteKQLString(`rg1`))
-	require.Equal(t, `'rg'' | union SecurityResources | where x =~ '`, quoteKQLString(`rg' | union SecurityResources | where x =~ `))
+	require.Equal(t, `@'rg1'`, quoteKQLString(`rg1`))
+	require.Equal(t, `@'rg'' | union SecurityResources | where x =~ '`, quoteKQLString(`rg' | union SecurityResources | where x =~ `))
+	// \' must not terminate the literal (standard '...' would treat it as escaped ').
+	require.Equal(t, `@'x\'' | union SecurityResources | where type =~ '`, quoteKQLString(`x\' | union SecurityResources | where type =~ `))
 }
 
 func TestValidateMetricNamespace(t *testing.T) {
@@ -28,7 +30,7 @@ func TestValidateMetricNamespace(t *testing.T) {
 
 func TestDiscoverResourcesForAzureMonitorSQL_EscapesQuotes(t *testing.T) {
 	srv := argTestServer(t, `{"data":{"columns":[{"name":"name","type":"string"},{"name":"resourceGroup","type":"string"}],"rows":[]}}`, func(kql string) {
-		require.Contains(t, kql, "resourceGroup =~ 'rg'' | union SecurityResources | where type =~ '")
+		require.Contains(t, kql, "resourceGroup =~ @'rg'' | union SecurityResources | where type =~ '")
 		require.NotContains(t, kql, `\'`)
 	})
 	defer srv.Close()
@@ -64,7 +66,7 @@ func TestListResourceGroupsForNamespace_RejectsInjectedNamespace(t *testing.T) {
 func TestListRegionsForNamespace_EscapesResourceGroupQuotes(t *testing.T) {
 	body := `{"data":{"columns":[{"name":"location","type":"string"}],"rows":[["eastus"]]}}`
 	srv := argTestServer(t, body, func(kql string) {
-		require.Contains(t, kql, "resourceGroup =~ 'rg''x'")
+		require.Contains(t, kql, "resourceGroup =~ @'rg''x'")
 		require.NotContains(t, kql, `\'`)
 	})
 	defer srv.Close()

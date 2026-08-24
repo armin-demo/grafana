@@ -30,8 +30,8 @@ func TestDiscoverResourcesForAzureMonitorSQL_ReturnsResources(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		b, err := io.ReadAll(r.Body)
 		require.NoError(t, err)
-		require.Contains(t, string(b), "Resources | where type =~ 'microsoft.compute/virtualmachines'")
-		require.Contains(t, string(b), "resourceGroup =~ 'rg1'")
+		require.Contains(t, string(b), "Resources | where type =~ @'microsoft.compute/virtualmachines'")
+		require.Contains(t, string(b), "resourceGroup =~ @'rg1'")
 		_, _ = w.Write([]byte(body))
 	}))
 	defer srv.Close()
