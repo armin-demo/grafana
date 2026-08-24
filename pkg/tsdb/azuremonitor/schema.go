@@ -421,8 +421,10 @@ func sampleResourceForNamespace(ctx context.Context, dsInfo types.DatasourceInfo
 		return rg, rn, rgn, nil
 	}
 
-	escaped := strings.ReplaceAll(namespace, `'`, `\'`)
-	kql := fmt.Sprintf("Resources | where type =~ '%s' | project name, resourceGroup, location | limit 1", escaped)
+	if err := validateMetricNamespace(namespace); err != nil {
+		return "", "", "", err
+	}
+	kql := fmt.Sprintf("Resources | where type =~ %s | project name, resourceGroup, location | limit 1", quoteKQLString(namespace))
 	tbl, qErr := runResourceGraphQuery(ctx, dsInfo, sub, kql)
 	if qErr != nil {
 		return "", "", "", qErr
@@ -562,17 +564,20 @@ func listAggregationValuesForMetric(ctx context.Context, dsInfo types.Datasource
 }
 
 func listResourceGroupsForNamespace(ctx context.Context, dsInfo types.DatasourceInfo, subscription, namespace string) ([]string, error) {
-	nsEsc := strings.ReplaceAll(namespace, `'`, `\'`)
-	kql := fmt.Sprintf("Resources | where type =~ '%s' | distinct resourceGroup | order by resourceGroup asc", nsEsc)
+	if err := validateMetricNamespace(namespace); err != nil {
+		return nil, err
+	}
+	kql := fmt.Sprintf("Resources | where type =~ %s | distinct resourceGroup | order by resourceGroup asc", quoteKQLString(namespace))
 	return runResourceGraphStringColumn(ctx, dsInfo, subscription, kql, "resourcegroup")
 }
 
 func listRegionsForNamespace(ctx context.Context, dsInfo types.DatasourceInfo, subscription, namespace, rg string) ([]string, error) {
-	nsEsc := strings.ReplaceAll(namespace, `'`, `\'`)
-	kql := fmt.Sprintf("Resources | where type =~ '%s'", nsEsc)
+	if err := validateMetricNamespace(namespace); err != nil {
+		return nil, err
+	}
+	kql := fmt.Sprintf("Resources | where type =~ %s", quoteKQLString(namespace))
 	if rg != "" {
-		rgEsc := strings.ReplaceAll(rg, `'`, `\'`)
-		kql += fmt.Sprintf(" | where resourceGroup =~ '%s'", rgEsc)
+		kql += fmt.Sprintf(" | where resourceGroup =~ %s", quoteKQLString(rg))
 	}
 	kql += " | distinct location | order by location asc"
 	return runResourceGraphStringColumn(ctx, dsInfo, subscription, kql, "location")
@@ -582,12 +587,12 @@ func listResourceNamesForNamespace(ctx context.Context, dsInfo types.DatasourceI
 	if rg == "" {
 		return nil, nil
 	}
-	nsEsc := strings.ReplaceAll(namespace, `'`, `\'`)
-	rgEsc := strings.ReplaceAll(rg, `'`, `\'`)
-	kql := fmt.Sprintf("Resources | where type =~ '%s' | where resourceGroup =~ '%s'", nsEsc, rgEsc)
+	if err := validateMetricNamespace(namespace); err != nil {
+		return nil, err
+	}
+	kql := fmt.Sprintf("Resources | where type =~ %s | where resourceGroup =~ %s", quoteKQLString(namespace), quoteKQLString(rg))
 	if rgn != "" {
-		rgnEsc := strings.ReplaceAll(rgn, `'`, `\'`)
-		kql += fmt.Sprintf(" | where location =~ '%s'", rgnEsc)
+		kql += fmt.Sprintf(" | where location =~ %s", quoteKQLString(rgn))
 	}
 	kql += " | project name | order by name asc"
 	return runResourceGraphStringColumn(ctx, dsInfo, subscription, kql, "name")

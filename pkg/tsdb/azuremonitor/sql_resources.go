@@ -17,11 +17,12 @@ const azureMonitorSQLMaxResourcesPerQuery = 20
 // via Azure Resource Graph, ordered by name. Returns at most azureMonitorSQLMaxResourcesPerQuery entries;
 // if more would match, returns an error.
 func discoverResourcesForAzureMonitorSQL(ctx context.Context, dsInfo types.DatasourceInfo, subscription, resourceGroup, metricNamespace string) ([]dataquery.AzureMonitorResource, error) {
-	nsEsc := strings.ReplaceAll(metricNamespace, `'`, `\'`)
-	rgEsc := strings.ReplaceAll(resourceGroup, `'`, `\'`)
+	if err := validateMetricNamespace(metricNamespace); err != nil {
+		return nil, err
+	}
 	kql := fmt.Sprintf(
-		"Resources | where type =~ '%s' | where resourceGroup =~ '%s' | project name, resourceGroup | order by name asc | take %d",
-		nsEsc, rgEsc, azureMonitorSQLMaxResourcesPerQuery+1,
+		"Resources | where type =~ %s | where resourceGroup =~ %s | project name, resourceGroup | order by name asc | take %d",
+		quoteKQLString(metricNamespace), quoteKQLString(resourceGroup), azureMonitorSQLMaxResourcesPerQuery+1,
 	)
 	table, err := runResourceGraphQuery(ctx, dsInfo, subscription, kql)
 	if err != nil {

@@ -163,7 +163,8 @@ func callResource(ctx context.Context, req *backend.CallResourceRequest, sender 
 	if perr != nil {
 		return sender.Send(&backend.CallResourceResponse{Status: http.StatusBadRequest})
 	}
-	if cleaned := path.Clean(parsed.Path); cleaned != "/loki/api/v1" && !strings.HasPrefix(cleaned, "/loki/api/v1/") {
+	cleaned := path.Clean(parsed.Path)
+	if cleaned != "/loki/api/v1" && !strings.HasPrefix(cleaned, "/loki/api/v1/") {
 		return sender.Send(&backend.CallResourceResponse{Status: http.StatusBadRequest})
 	}
 
@@ -189,6 +190,10 @@ func callResource(ctx context.Context, req *backend.CallResourceRequest, sender 
 			return err
 		}
 	} else {
+		rel := strings.TrimPrefix(cleaned, "/loki/api/v1/")
+		if cleaned == "/loki/api/v1" || !isAllowedLokiCallResourcePath(rel) {
+			return sender.Send(&backend.CallResourceResponse{Status: http.StatusForbidden})
+		}
 		rawLokiResponse, err = api.RawQuery(ctx, lokiURL)
 		if err != nil {
 			span.RecordError(err)
