@@ -52,12 +52,41 @@ func TestMacros(t *testing.T) {
 			in:  `select * from x where time < $__timeTo`,
 			out: `select * from x where time < cast('2023-01-01T00:10:00Z' as timestamp)`,
 		},
+		{
+			in:  `select $__timeGroup(time, hour)`,
+			out: `select datepart('hour', time),datepart('day', time),datepart('month', time),datepart('year', time)`,
+		},
+		{
+			in:  `select $__timeGroupAlias(time, year)`,
+			out: `select datepart('year', time) as time_year`,
+		},
 	}
 	for _, c := range cs {
 		t.Run(c.in, func(t *testing.T) {
 			sql, err := sqlutil.Interpolate(query.WithSQL(c.in), macros)
 			require.NoError(t, err)
 			require.Equal(t, c.out, sql)
+		})
+	}
+}
+
+func TestMacrosRejectInvalidIdentifiers(t *testing.T) {
+	query := sqlutil.Query{}
+
+	cases := []string{
+		`select $__dateBin(time; DROP TABLE x)`,
+		`select $__dateBin(1=1 OR time)`,
+		`select $__dateBinAlias("time")`,
+		`select $__timeGroup(1=1 OR time, hour)`,
+		`select $__timeFilter(time >= 'x' OR time)`,
+		`select $__timeFilter(time;SELECT 1)`,
+	}
+	for _, in := range cases {
+		t.Run(in, func(t *testing.T) {
+			sql, err := sqlutil.Interpolate(query.WithSQL(in), macros)
+			require.Error(t, err)
+			require.Contains(t, err.Error(), "invalid SQL identifier")
+			require.Equal(t, in, sql)
 		})
 	}
 }

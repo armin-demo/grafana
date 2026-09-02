@@ -2,10 +2,24 @@ package fsql
 
 import (
 	"fmt"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/data/sqlutil"
 )
+
+// sqlIdentifier matches a single unquoted SQL identifier. Macro column arguments
+// are interpolated with fmt.Sprintf; anything else is treated as injection.
+var sqlIdentifier = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+
+func sanitizeSQLIdentifier(name string) (string, error) {
+	name = strings.TrimSpace(name)
+	if !sqlIdentifier.MatchString(name) {
+		return "", fmt.Errorf("invalid SQL identifier %q", name)
+	}
+	return name, nil
+}
 
 var macros = sqlutil.Macros{
 	"dateBin":        macroDateBin(""),
@@ -13,6 +27,7 @@ var macros = sqlutil.Macros{
 	"interval":       macroInterval,
 	"timeGroup":      macroTimeGroup,
 	"timeGroupAlias": macroTimeGroupAlias,
+	"timeFilter":     macroTimeFilter,
 
 	// The behaviors of timeFrom and timeTo as defined in the SDK are different
 	// from all other Grafana SQL plugins. Instead we'll take the implementations,
@@ -21,12 +36,30 @@ var macros = sqlutil.Macros{
 	"timeFrom": macroFrom,
 }
 
+func macroTimeFilter(query *sqlutil.Query, args []string) (string, error) {
+	if len(args) != 1 {
+		return "", fmt.Errorf("%w: expected 1 argument, received %d", sqlutil.ErrorBadArgumentCount, len(args))
+	}
+
+	column, err := sanitizeSQLIdentifier(args[0])
+	if err != nil {
+		return "", err
+	}
+
+	from := query.TimeRange.From.UTC().Format(time.RFC3339)
+	to := query.TimeRange.To.UTC().Format(time.RFC3339)
+	return fmt.Sprintf("%s >= '%s' AND %s <= '%s'", column, from, column, to), nil
+}
+
 func macroTimeGroup(query *sqlutil.Query, args []string) (string, error) {
 	if len(args) != 2 {
 		return "", fmt.Errorf("%w: expected 1 argument, received %d", sqlutil.ErrorBadArgumentCount, len(args))
 	}
 
-	column := args[0]
+	column, err := sanitizeSQLIdentifier(args[0])
+	if err != nil {
+		return "", err
+	}
 
 	res := ""
 	switch args[1] {
@@ -54,7 +87,10 @@ func macroTimeGroupAlias(query *sqlutil.Query, args []string) (string, error) {
 		return "", fmt.Errorf("%w: expected 1 argument, received %d", sqlutil.ErrorBadArgumentCount, len(args))
 	}
 
-	column := args[0]
+	column, err := sanitizeSQLIdentifier(args[0])
+	if err != nil {
+		return "", err
+	}
 
 	res := ""
 	switch args[1] {
@@ -96,7 +132,10 @@ func macroDateBin(suffix string) sqlutil.MacroFunc {
 		if len(args) != 1 {
 			return "", fmt.Errorf("%w: expected 1 argument, received %d", sqlutil.ErrorBadArgumentCount, len(args))
 		}
-		column := args[0]
+		column, err := sanitizeSQLIdentifier(args[0])
+		if err != nil {
+			return "", err
+		}
 		aliasing := func() string {
 			if suffix == "" {
 				return ""

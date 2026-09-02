@@ -1166,6 +1166,99 @@ func TestDataSourceProxy_LokiRouteAccessControl(t *testing.T) {
 	}
 }
 
+func TestDataSourceProxy_InfluxDBMethodAccess(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		dsType  string
+		method  string
+		path    string
+		wantErr string
+	}{
+		{
+			name:   "allows InfluxQL GET /query",
+			dsType: datasources.DS_INFLUXDB,
+			method: http.MethodGet,
+			path:   "query",
+		},
+		{
+			name:   "allows InfluxQL POST /query",
+			dsType: datasources.DS_INFLUXDB,
+			method: http.MethodPost,
+			path:   "query",
+		},
+		{
+			name:   "allows Flux POST /api/v2/query",
+			dsType: datasources.DS_INFLUXDB,
+			method: http.MethodPost,
+			path:   "api/v2/query",
+		},
+		{
+			name:    "denies InfluxDB 1.x write",
+			dsType:  datasources.DS_INFLUXDB,
+			method:  http.MethodPost,
+			path:    "write",
+			wantErr: "non allow-listed POSTs not allowed on proxied influxdb datasource",
+		},
+		{
+			name:    "denies InfluxDB 2.x write",
+			dsType:  datasources.DS_INFLUXDB,
+			method:  http.MethodPost,
+			path:    "api/v2/write",
+			wantErr: "non allow-listed POSTs not allowed on proxied influxdb datasource",
+		},
+		{
+			name:    "denies path-traversal write",
+			dsType:  datasources.DS_INFLUXDB,
+			method:  http.MethodPost,
+			path:    "query/../write",
+			wantErr: "non allow-listed POSTs not allowed on proxied influxdb datasource",
+		},
+		{
+			name:    "denies DELETE",
+			dsType:  datasources.DS_INFLUXDB,
+			method:  http.MethodDelete,
+			path:    "query",
+			wantErr: "non allow-listed DELETEs not allowed on proxied influxdb datasource",
+		},
+		{
+			name:    "denies InfluxDB 0.8 write",
+			dsType:  datasources.DS_INFLUXDB_08,
+			method:  http.MethodPost,
+			path:    "series",
+			wantErr: "non allow-listed POSTs not allowed on proxied influxdb_08 datasource",
+		},
+		{
+			name:   "allows InfluxDB 0.8 GET query",
+			dsType: datasources.DS_INFLUXDB_08,
+			method: http.MethodGet,
+			path:   "query",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			req, err := http.NewRequest(tc.method, "http://localhost/"+tc.path, nil)
+			require.NoError(t, err)
+			ctx := &contextmodel.ReqContext{
+				Context:      &web.Context{Req: req},
+				SignedInUser: &user.SignedInUser{OrgRole: org.RoleViewer},
+			}
+			ds := &datasources.DataSource{
+				Type: tc.dsType,
+				URL:  "http://influxdb:8086",
+			}
+
+			proxy, err := setupDSProxyTest(t, ctx, ds, nil, tc.path)
+			require.NoError(t, err)
+
+			err = proxy.validateRequest()
+			if tc.wantErr != "" {
+				require.EqualError(t, err, tc.wantErr)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
+}
+
 func TestNewDataSourceProxy_ProtocolLessURL(t *testing.T) {
 	ctx := contextmodel.ReqContext{
 		Context:      &web.Context{},

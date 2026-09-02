@@ -392,9 +392,39 @@ func (proxy *DataSourceProxy) validateRequest() error {
 		case "DELETE", "PUT", "POST":
 			return fmt.Errorf("non allow-listed %ss not allowed on proxied %s datasource", proxy.ctx.Req.Method, proxy.dataSource.PluginType())
 		}
+	case datasources.DS_INFLUXDB, datasources.DS_INFLUXDB_08:
+		// InfluxDB ships no plugin.json routes, so unmatched POSTs would otherwise
+		// reverse-proxy writes (/write, /api/v2/write) with stored credentials.
+		return validateInfluxDBProxyRequest(proxy.ctx.Req.Method, proxy.proxyPath, proxy.dataSource.PluginType())
 	}
 
 	return nil
+}
+
+// validateInfluxDBProxyRequest allowlists query-only InfluxDB HTTP paths for mutating
+// methods. GET/HEAD remain unrestricted here to match Prometheus/Loki.
+func validateInfluxDBProxyRequest(method, proxyPath, dsType string) error {
+	switch method {
+	case http.MethodGet, http.MethodHead:
+		return nil
+	case http.MethodPost:
+		path, err := plugins.CleanRelativePath(proxyPath)
+		if err != nil {
+			return err
+		}
+		if path == "." {
+			path = ""
+		}
+		switch path {
+		case "query", "api/v2/query":
+			return nil
+		}
+		return fmt.Errorf("non allow-listed POSTs not allowed on proxied %s datasource", dsType)
+	case http.MethodDelete, http.MethodPut, http.MethodPatch:
+		return fmt.Errorf("non allow-listed %ss not allowed on proxied %s datasource", method, dsType)
+	default:
+		return fmt.Errorf("non allow-listed %ss not allowed on proxied %s datasource", method, dsType)
+	}
 }
 
 func (proxy *DataSourceProxy) hasAccessToRoute(route *plugins.Route) bool {
