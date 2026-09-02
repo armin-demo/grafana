@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -412,6 +413,9 @@ func validateInfluxDBProxyRequest(method, proxyPath, dsType string) error {
 		if err != nil {
 			return err
 		}
+		// CleanRelativePath uses filepath and emits OS separators; Flux
+		// paths are URL segments and must compare with '/'.
+		path = filepath.ToSlash(path)
 		if path == "." {
 			path = ""
 		}
