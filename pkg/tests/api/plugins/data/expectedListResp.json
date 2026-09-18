@@ -420,12 +420,12 @@
       },
       "build": {},
       "screenshots": null,
-      "version": "",
+      "version": "13.3.0",
       "updated": "",
       "keywords": null
     },
     "dependencies": {
-      "grafanaDependency": "",
+      "grafanaDependency": ">=13.3.0",
       "grafanaVersion": "*",
       "plugins": [],
       "extensions": {

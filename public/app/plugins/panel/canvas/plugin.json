@@ -19,6 +19,12 @@
         "name": "Documentation",
         "url": "https://grafana.com/docs/grafana/latest/panels-visualizations/visualizations/canvas/"
       }
-    ]
+    ],
+    "version": "13.3.0"
+  },
+
+  "dependencies": {
+    "grafanaDependency": ">=13.3.0",
+    "plugins": []
   }
 }

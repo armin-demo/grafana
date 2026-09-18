@@ -536,6 +536,23 @@ func Test_ReadPluginJSON(t *testing.T) {
 	}
 }
 
+func TestCanvasPluginJSONExternalizationMetadata(t *testing.T) {
+	f, err := os.Open("../../public/app/plugins/panel/canvas/plugin.json")
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, f.Close()) })
+
+	got, err := ReadPluginJSON(f)
+	require.NoError(t, err)
+
+	require.Equal(t, "canvas", got.ID)
+	require.Equal(t, TypePanel, got.Type)
+	require.Equal(t, "Canvas", got.Name)
+	require.Equal(t, "img/icn-canvas.svg", got.Info.Logos.Small)
+	require.Equal(t, "img/icn-canvas.svg", got.Info.Logos.Large)
+	require.Equal(t, "13.3.0", got.Info.Version)
+	require.Equal(t, ">=13.3.0", got.Dependencies.GrafanaDependency)
+}
+
 func Test_validatePluginJSON(t *testing.T) {
 	type args struct {
 		data JSONData
