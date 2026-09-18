@@ -923,7 +923,7 @@ export const v0alpha1Response: PluginMetasResponse = structuredClone({
               large: 'app/plugins/panel/canvas/img/icn-canvas.svg',
             },
             updated: '',
-            version: '',
+            version: '13.3.0',
             author: {
               name: 'Grafana Labs',
               url: 'https://grafana.com',
@@ -941,7 +941,7 @@ export const v0alpha1Response: PluginMetasResponse = structuredClone({
             ],
           },
           dependencies: {
-            grafanaDependency: '',
+            grafanaDependency: '>=13.3.0',
             grafanaVersion: '*',
           },
         },

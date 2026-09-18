@@ -428,7 +428,7 @@ export const panels: PanelPluginMetas = structuredClone({
       },
       build: {},
       screenshots: [],
-      version: '',
+      version: '13.3.0',
       updated: '',
       keywords: [],
     },
