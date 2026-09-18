@@ -5,8 +5,11 @@ import {
   type EventBus,
   FieldColorModeId,
   FieldType,
+  type DisplayValue,
 } from '@grafana/data';
+import { GraphDrawStyle, VisibilityMode } from '@grafana/schema';
 import { getTheme } from '@grafana/ui';
+import uPlot from 'uplot';
 
 import { getXAxisConfig, preparePlotConfigBuilder, UPLOT_DEFAULT_AXIS_GAP } from './utils';
 
@@ -532,5 +535,135 @@ describe('colorblind line style patterns', () => {
 
     expect(series).toHaveLength(1);
     expect(series[0].props.lineStyle).toEqual({ fill: 'solid' });
+  });
+});
+
+describe('showValues draw hook', () => {
+  const eventBus: EventBus = {
+    publish: jest.fn(),
+    getStream: jest.fn() as EventBus['getStream'],
+    subscribe: jest.fn(),
+    removeAllListeners: jest.fn(),
+    newScopedBus: jest.fn(),
+  };
+
+  function display(v: number): DisplayValue {
+    return { text: String(v), numeric: v, color: '#fff' };
+  }
+
+  function buildShowValuesConfig() {
+    const frame = createDataFrame({
+      fields: [
+        {
+          name: 'Time',
+          type: FieldType.time,
+          values: [1000, 2000],
+          config: {},
+        },
+        {
+          name: 'A',
+          type: FieldType.number,
+          values: [10, 20],
+          display,
+          config: {
+            custom: {
+              drawStyle: GraphDrawStyle.Line,
+              showPoints: VisibilityMode.Always,
+              showValues: true,
+            },
+          },
+        },
+        {
+          name: 'B',
+          type: FieldType.number,
+          values: [30, 40],
+          display,
+          config: {
+            custom: {
+              drawStyle: GraphDrawStyle.Line,
+              showPoints: VisibilityMode.Always,
+              showValues: true,
+            },
+          },
+        },
+      ],
+    });
+
+    return preparePlotConfigBuilder({
+      frame,
+      // @ts-ignore
+      theme: getTheme(),
+      timeZones: ['browser'],
+      getTimeRange: jest.fn(),
+      eventBus,
+      sync: jest.fn(),
+      allFrames: [frame],
+      renderers: [],
+    }).getConfig();
+  }
+
+  function mockPlot(seriesShow: [boolean, boolean]) {
+    const fillText = jest.fn();
+    const u = {
+      bbox: { width: 800 },
+      data: [
+        [1000, 2000],
+        [10, 20],
+        [30, 40],
+      ],
+      series: [
+        {},
+        {
+          show: seriesShow[0],
+          scale: 'A',
+          points: { show: () => true },
+        },
+        {
+          show: seriesShow[1],
+          scale: 'B',
+          points: { show: () => true },
+        },
+      ],
+      ctx: {
+        save: jest.fn(),
+        restore: jest.fn(),
+        fillText,
+        font: '',
+        fillStyle: '',
+        textAlign: '',
+        textBaseline: '',
+      },
+      valToPos: () => 10,
+    } as unknown as uPlot;
+
+    return { u, fillText };
+  }
+
+  it('registers a draw hook when showValues is enabled', () => {
+    const config = buildShowValuesConfig();
+    expect(config.hooks?.draw?.length).toBeGreaterThan(0);
+  });
+
+  it('does not draw value labels for series hidden via the legend', () => {
+    const config = buildShowValuesConfig();
+    const draw = config.hooks!.draw![0]!;
+    const { u, fillText } = mockPlot([true, false]);
+
+    draw(u);
+
+    const labels = fillText.mock.calls.map((call) => call[0]);
+    expect(labels).toEqual(['10', '20']);
+    expect(labels).not.toContain('30');
+    expect(labels).not.toContain('40');
+  });
+
+  it('draws value labels for every visible series', () => {
+    const config = buildShowValuesConfig();
+    const draw = config.hooks!.draw![0]!;
+    const { u, fillText } = mockPlot([true, true]);
+
+    draw(u);
+
+    expect(fillText.mock.calls.map((call) => call[0])).toEqual(['10', '20', '30', '40']);
   });
 });

@@ -673,6 +673,12 @@ export const preparePlotConfigBuilder: UPlotConfigPrepFn = ({
         const series = u.series[seriesIdx];
         const field = frame.fields[seriesIdx];
 
+        // Legend isolate/toggle sets series.show = false; skip labels for hidden series
+        // the same way uPlot skips their paths and points.
+        if (series.show === false) {
+          continue;
+        }
+
         if (
           field.config.custom?.showValues &&
           // @ts-ignore points.show() is always callable on the instance (but may be boolean when passed to uPlot as init option)
