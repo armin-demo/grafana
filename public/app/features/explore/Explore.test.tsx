@@ -9,6 +9,7 @@ import {
   type DataSourceApi,
   EventBusSrv,
   LoadingState,
+  MutableDataFrame,
   PluginExtensionTypes,
   store,
 } from '@grafana/data';
@@ -106,10 +107,6 @@ const dummyProps: Props = {
   setSupplementaryQueryEnabled: jest.fn(),
   correlationEditorDetails: undefined,
   correlationEditorHelperData: undefined,
-  exploreActiveDS: {
-    exploreToDS: [],
-    dsToExplore: [],
-  },
   changeDatasource: jest.fn(),
   compact: false,
   changeCompactMode: jest.fn(),
@@ -177,6 +174,30 @@ const setup = (overrideProps?: Partial<Props>) => {
 };
 
 describe('Explore', () => {
+  it('reuses split handlers for the same visualization', () => {
+    const explore = new Explore(dummyProps);
+
+    expect(explore.getSplitOpenFn('graph')).toBe(explore.getSplitOpenFn('graph'));
+    expect(explore.getSplitOpenFn('graph')).not.toBe(explore.getSplitOpenFn('logs'));
+  });
+
+  it('passes the classified trace frames through without creating a new array', () => {
+    const traceFrames = [new MutableDataFrame({ fields: [], meta: { preferredVisualisationType: 'trace' } })];
+    const queryResponse = {
+      ...makeEmptyQueryResponse(LoadingState.Done),
+      series: traceFrames,
+      traceFrames,
+    };
+    const explore = new Explore({ ...dummyProps, queryResponse });
+
+    const panel = explore.renderTraceViewPanel();
+
+    expect(panel).toBeTruthy();
+    if (panel) {
+      expect(panel.props.children.props.dataFrames).toBe(traceFrames);
+    }
+  });
+
   it('should not render no data with not started loading state', async () => {
     setup();
 
