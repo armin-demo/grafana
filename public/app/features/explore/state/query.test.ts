@@ -1384,6 +1384,50 @@ describe('reducer', () => {
       expect(nextState.queryResponse.graphFrames).not.toBe(queryResponse.graphFrames);
       expect(nextState.graphResult).not.toBe(initialState.graphResult);
     });
+
+    it('uses new visualization arrays when streaming updates the same frames', () => {
+      const frame = new MutableDataFrame({ fields: [] });
+      const queryResponse = {
+        ...createEmptyQueryResponse(),
+        request: {} as DataQueryRequest,
+        state: LoadingState.Streaming,
+        series: [frame],
+        graphFrames: [frame],
+        graphResult: [frame],
+        tableResult: [frame],
+      };
+      const initialState = {
+        ...makeExplorePaneState(),
+        queryResponse,
+        graphResult: queryResponse.graphResult,
+        tableResult: queryResponse.tableResult,
+      };
+
+      const nextSeries = [frame];
+      const nextGraphFrames = [frame];
+      const nextGraphResult = [frame];
+      const nextTableResult = [frame];
+
+      const nextState = queryReducer(
+        initialState,
+        queryStreamUpdatedAction({
+          exploreId,
+          response: {
+            ...queryResponse,
+            state: LoadingState.Streaming,
+            series: nextSeries,
+            graphFrames: nextGraphFrames,
+            graphResult: nextGraphResult,
+            tableResult: nextTableResult,
+          },
+        })
+      );
+
+      expect(nextState.queryResponse.series).toBe(nextSeries);
+      expect(nextState.queryResponse.graphFrames).toBe(nextGraphFrames);
+      expect(nextState.graphResult).toBe(nextGraphResult);
+      expect(nextState.tableResult).toBe(nextTableResult);
+    });
   });
   describe('clear live logs', () => {
     it('should clear current log rows', async () => {

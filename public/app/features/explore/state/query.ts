@@ -1303,13 +1303,23 @@ export const queryReducer = (state: ExploreItemState, action: AnyAction): Explor
   return state;
 };
 
-function reuseUnchangedArray<T>(previous: T[] | null | undefined, next: T[]): T[];
-function reuseUnchangedArray<T>(previous: T[] | null, next: T[] | null): T[] | null;
-function reuseUnchangedArray<T>(previous: T[] | undefined, next: T[] | undefined): T[] | undefined;
+function reuseUnchangedArray<T>(previous: T[] | null | undefined, next: T[], allowReuse?: boolean): T[];
+function reuseUnchangedArray<T>(previous: T[] | null, next: T[] | null, allowReuse?: boolean): T[] | null;
+function reuseUnchangedArray<T>(
+  previous: T[] | undefined,
+  next: T[] | undefined,
+  allowReuse?: boolean
+): T[] | undefined;
 function reuseUnchangedArray<T>(
   previous: T[] | null | undefined,
-  next: T[] | null | undefined
+  next: T[] | null | undefined,
+  allowReuse = true
 ): T[] | null | undefined {
+  // Streaming sources keep the same DataFrame objects and mutate field values.
+  // Reusing the previous array hides those updates from memos keyed on identity.
+  if (!allowReuse) {
+    return next;
+  }
   return previous && next && compareArrayValues(previous, next, (a, b) => a === b) ? previous : next;
 }
 
@@ -1339,23 +1349,27 @@ const processQueryResponse = (state: ExploreItemState, action: PayloadAction<Que
     return { ...state };
   }
 
+  const allowFrameReuse = response.state !== LoadingState.Streaming;
+
   const queryResponse = {
     ...response,
-    series: reuseUnchangedArray(state.queryResponse.series, response.series) ?? [],
-    annotations: reuseUnchangedArray(state.queryResponse.annotations, response.annotations),
-    graphFrames: reuseUnchangedArray(state.queryResponse.graphFrames, response.graphFrames) ?? [],
-    tableFrames: reuseUnchangedArray(state.queryResponse.tableFrames, response.tableFrames) ?? [],
-    logsFrames: reuseUnchangedArray(state.queryResponse.logsFrames, response.logsFrames) ?? [],
-    traceFrames: reuseUnchangedArray(state.queryResponse.traceFrames, response.traceFrames) ?? [],
-    nodeGraphFrames: reuseUnchangedArray(state.queryResponse.nodeGraphFrames, response.nodeGraphFrames) ?? [],
-    flameGraphFrames: reuseUnchangedArray(state.queryResponse.flameGraphFrames, response.flameGraphFrames) ?? [],
+    series: reuseUnchangedArray(state.queryResponse.series, response.series, allowFrameReuse) ?? [],
+    annotations: reuseUnchangedArray(state.queryResponse.annotations, response.annotations, allowFrameReuse),
+    graphFrames: reuseUnchangedArray(state.queryResponse.graphFrames, response.graphFrames, allowFrameReuse) ?? [],
+    tableFrames: reuseUnchangedArray(state.queryResponse.tableFrames, response.tableFrames, allowFrameReuse) ?? [],
+    logsFrames: reuseUnchangedArray(state.queryResponse.logsFrames, response.logsFrames, allowFrameReuse) ?? [],
+    traceFrames: reuseUnchangedArray(state.queryResponse.traceFrames, response.traceFrames, allowFrameReuse) ?? [],
+    nodeGraphFrames:
+      reuseUnchangedArray(state.queryResponse.nodeGraphFrames, response.nodeGraphFrames, allowFrameReuse) ?? [],
+    flameGraphFrames:
+      reuseUnchangedArray(state.queryResponse.flameGraphFrames, response.flameGraphFrames, allowFrameReuse) ?? [],
     rawPrometheusFrames:
-      reuseUnchangedArray(state.queryResponse.rawPrometheusFrames, response.rawPrometheusFrames) ?? [],
-    customFrames: reuseUnchangedArray(state.queryResponse.customFrames, response.customFrames) ?? [],
+      reuseUnchangedArray(state.queryResponse.rawPrometheusFrames, response.rawPrometheusFrames, allowFrameReuse) ?? [],
+    customFrames: reuseUnchangedArray(state.queryResponse.customFrames, response.customFrames, allowFrameReuse) ?? [],
   };
 
-  const stableGraphResult = reuseUnchangedArray(state.graphResult, graphResult);
-  const stableTableResult = reuseUnchangedArray(state.tableResult, tableResult);
+  const stableGraphResult = reuseUnchangedArray(state.graphResult, graphResult, allowFrameReuse);
+  const stableTableResult = reuseUnchangedArray(state.tableResult, tableResult, allowFrameReuse);
   queryResponse.graphResult = stableGraphResult;
   queryResponse.tableResult = stableTableResult;
 
