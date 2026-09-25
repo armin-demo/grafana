@@ -44,7 +44,10 @@ export function RowItemRenderer({ model }: SceneComponentProps<RowItem>) {
   const { rows } = model.getParentLayout().useState();
   const styles = useStyles2(getStyles);
   const clearStyles = useStyles2(clearButtonStyles);
-  const isTopLevel = model.parent?.parent instanceof DashboardScene;
+  // Repeat clones are parented under the source row (`repeatedRows`), so
+  // parent.parent is the source RowItem — not DashboardScene. Use the shared
+  // RowsLayoutManager instead so clones keep the same title typography as the source.
+  const isTopLevel = model.getParentLayout().parent instanceof DashboardScene;
   const pointerDistance = usePointerDistance();
   const soloPanelContext = useSoloPanelContext();
   // OpenFeature is not initialized for anonymous users, so fall back to
