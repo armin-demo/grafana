@@ -6,6 +6,7 @@ import { mergeMap, throttleTime } from 'rxjs/operators';
 
 import {
   type AbsoluteTimeRange,
+  compareArrayValues,
   type DataFrame,
   DataQueryErrorType,
   type DataQueryResponse,
@@ -1302,6 +1303,16 @@ export const queryReducer = (state: ExploreItemState, action: AnyAction): Explor
   return state;
 };
 
+function reuseUnchangedArray<T>(previous: T[] | null | undefined, next: T[]): T[];
+function reuseUnchangedArray<T>(previous: T[] | null, next: T[] | null): T[] | null;
+function reuseUnchangedArray<T>(previous: T[] | undefined, next: T[] | undefined): T[] | undefined;
+function reuseUnchangedArray<T>(
+  previous: T[] | null | undefined,
+  next: T[] | null | undefined
+): T[] | null | undefined {
+  return previous && next && compareArrayValues(previous, next, (a, b) => a === b) ? previous : next;
+}
+
 const processQueryResponse = (state: ExploreItemState, action: PayloadAction<QueryEndedPayload>): ExploreItemState => {
   const { response } = action.payload;
   const {
@@ -1328,12 +1339,32 @@ const processQueryResponse = (state: ExploreItemState, action: PayloadAction<Que
     return { ...state };
   }
 
+  const queryResponse = {
+    ...response,
+    series: reuseUnchangedArray(state.queryResponse.series, response.series) ?? [],
+    annotations: reuseUnchangedArray(state.queryResponse.annotations, response.annotations),
+    graphFrames: reuseUnchangedArray(state.queryResponse.graphFrames, response.graphFrames) ?? [],
+    tableFrames: reuseUnchangedArray(state.queryResponse.tableFrames, response.tableFrames) ?? [],
+    logsFrames: reuseUnchangedArray(state.queryResponse.logsFrames, response.logsFrames) ?? [],
+    traceFrames: reuseUnchangedArray(state.queryResponse.traceFrames, response.traceFrames) ?? [],
+    nodeGraphFrames: reuseUnchangedArray(state.queryResponse.nodeGraphFrames, response.nodeGraphFrames) ?? [],
+    flameGraphFrames: reuseUnchangedArray(state.queryResponse.flameGraphFrames, response.flameGraphFrames) ?? [],
+    rawPrometheusFrames:
+      reuseUnchangedArray(state.queryResponse.rawPrometheusFrames, response.rawPrometheusFrames) ?? [],
+    customFrames: reuseUnchangedArray(state.queryResponse.customFrames, response.customFrames) ?? [],
+  };
+
+  const stableGraphResult = reuseUnchangedArray(state.graphResult, graphResult);
+  const stableTableResult = reuseUnchangedArray(state.tableResult, tableResult);
+  queryResponse.graphResult = stableGraphResult;
+  queryResponse.tableResult = stableTableResult;
+
   return {
     ...state,
     queriesChangedIndexAtRun: state.queriesChangedIndex,
-    queryResponse: response,
-    graphResult,
-    tableResult,
+    queryResponse,
+    graphResult: stableGraphResult,
+    tableResult: stableTableResult,
     rawPrometheusResult,
     logsResult:
       state.isLive && logsResult

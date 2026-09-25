@@ -53,7 +53,7 @@ import {
 } from './query';
 import * as actions from './query';
 import { createDefaultInitialState } from './testHelpers';
-import { makeExplorePaneState } from './utils';
+import { createEmptyQueryResponse, makeExplorePaneState } from './utils';
 
 jest.mock('app/features/logs/logsModel');
 
@@ -1310,6 +1310,79 @@ describe('reducer', () => {
       expect(
         getState().explore.panes.left!.supplementaryQueries[SupplementaryQueryType.LogsSample].dataSubscription
       ).toBeUndefined();
+    });
+  });
+  describe('query response references', () => {
+    it('preserves visualization arrays when a response contains the same frames', () => {
+      const frame = new MutableDataFrame({ fields: [] });
+      const queryResponse = {
+        ...createEmptyQueryResponse(),
+        request: {} as DataQueryRequest,
+        state: LoadingState.Loading,
+        series: [frame],
+        graphFrames: [frame],
+        graphResult: [frame],
+      };
+      const initialState = {
+        ...makeExplorePaneState(),
+        queryResponse,
+        graphResult: queryResponse.graphResult,
+      };
+
+      const nextState = queryReducer(
+        initialState,
+        queryStreamUpdatedAction({
+          exploreId,
+          response: {
+            ...queryResponse,
+            state: LoadingState.Done,
+            series: [frame],
+            graphFrames: [frame],
+            graphResult: [frame],
+          },
+        })
+      );
+
+      expect(nextState.queryResponse.state).toBe(LoadingState.Done);
+      expect(nextState.queryResponse.series).toBe(queryResponse.series);
+      expect(nextState.queryResponse.graphFrames).toBe(queryResponse.graphFrames);
+      expect(nextState.graphResult).toBe(initialState.graphResult);
+    });
+
+    it('uses new visualization arrays when response frames change', () => {
+      const frame = new MutableDataFrame({ fields: [] });
+      const nextFrame = new MutableDataFrame({ fields: [] });
+      const queryResponse = {
+        ...createEmptyQueryResponse(),
+        request: {} as DataQueryRequest,
+        state: LoadingState.Loading,
+        series: [frame],
+        graphFrames: [frame],
+        graphResult: [frame],
+      };
+      const initialState = {
+        ...makeExplorePaneState(),
+        queryResponse,
+        graphResult: queryResponse.graphResult,
+      };
+
+      const nextState = queryReducer(
+        initialState,
+        queryStreamUpdatedAction({
+          exploreId,
+          response: {
+            ...queryResponse,
+            state: LoadingState.Done,
+            series: [nextFrame],
+            graphFrames: [nextFrame],
+            graphResult: [nextFrame],
+          },
+        })
+      );
+
+      expect(nextState.queryResponse.series).not.toBe(queryResponse.series);
+      expect(nextState.queryResponse.graphFrames).not.toBe(queryResponse.graphFrames);
+      expect(nextState.graphResult).not.toBe(initialState.graphResult);
     });
   });
   describe('clear live logs', () => {
