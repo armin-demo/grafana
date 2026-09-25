@@ -46,10 +46,7 @@ import { FlameGraphExploreContainer } from './FlameGraph/FlameGraphExploreContai
 import { GraphContainer } from './Graph/GraphContainer';
 import LogsContainer from './Logs/LogsContainer';
 import { LogsSamplePanel } from './Logs/LogsSamplePanel';
-import {
-  METRICS_SIDEBAR_LOCAL_STORAGE_KEYS,
-  MetricsSidebar,
-} from './MetricsSidebar/MetricsSidebar';
+import { METRICS_SIDEBAR_LOCAL_STORAGE_KEYS, MetricsSidebar } from './MetricsSidebar/MetricsSidebar';
 import { isPrometheusCompatibleDatasource } from './MetricsSidebar/isPrometheusCompatibleDatasource';
 import { NoData } from './NoData';
 import { NoDataSourceCallToAction } from './NoDataSourceCallToAction';
@@ -72,7 +69,7 @@ import {
   setQueries,
   setSupplementaryQueryEnabled,
 } from './state/query';
-import { isSplit, selectExploreDSMaps } from './state/selectors';
+import { isSplit } from './state/selectors';
 import { updateTimeRange } from './state/time';
 
 const getStyles = (theme: GrafanaTheme2) => {
@@ -372,6 +369,78 @@ export class Explore extends PureComponent<Props, ExploreState> {
     this.setState({ contentOutlineVisible: true });
   };
 
+  private splitOpenCache = new Map<string, ReturnType<typeof this.onSplitOpen>>();
+
+  getSplitOpenFn = (panelType: string) => {
+    let fn = this.splitOpenCache.get(panelType);
+    if (!fn) {
+      fn = this.onSplitOpen(panelType);
+      this.splitOpenCache.set(panelType, fn);
+    }
+    return fn;
+  };
+
+  setLogsSampleEnabled = (enabled: boolean) => {
+    const { setSupplementaryQueryEnabled, exploreId } = this.props;
+    setSupplementaryQueryEnabled(exploreId, enabled, SupplementaryQueryType.LogsSample);
+  };
+
+  onChangeCompactMode = () => {
+    this.props.changeCompactMode(this.props.exploreId, false);
+  };
+
+  onToggleQueryInspector = () => {
+    this.props.setShowQueryInspector(!this.props.showQueryInspector);
+  };
+
+  onSelectQueryFromLibrary = (query: DataQuery) => {
+    this.selectQueriesFromLibrary([query]);
+  };
+
+  selectQueriesFromLibrary = async (selectedQueries: DataQuery[]) => {
+    const { changeDatasource, queries, setQueries, exploreId, datasourceInstance } = this.props;
+    if (selectedQueries.length === 0) {
+      return;
+    }
+    const newQueries = [...queries];
+    for (const selectedQuery of selectedQueries) {
+      newQueries.push({
+        ...selectedQuery,
+        refId: getNextRefId(newQueries),
+      });
+    }
+    setQueries(exploreId, newQueries);
+    const selectedDatasourceUid = selectedQueries.find((q) => q.datasource?.uid)?.datasource?.uid;
+    if (selectedDatasourceUid) {
+      const uniqueDatasources = new Set(newQueries.map((q) => q.datasource?.uid));
+      const isMixed = uniqueDatasources.size > 1;
+      const newDatasourceRef = {
+        uid: isMixed ? MIXED_DATASOURCE_NAME : selectedDatasourceUid,
+      };
+      if (datasourceInstance?.uid !== newDatasourceRef.uid) {
+        await changeDatasource({ exploreId, datasource: newDatasourceRef });
+      }
+    }
+  };
+
+  replaceQueriesFromLibrary = async (selectedQueries: DataQuery[]) => {
+    const { changeDatasource, setQueries, exploreId, datasourceInstance } = this.props;
+    if (selectedQueries.length === 0) {
+      return;
+    }
+    const uniqueDatasources = new Set(
+      selectedQueries.map((q) => q.datasource?.uid).filter((uid): uid is string => !!uid)
+    );
+    const targetDatasourceUid =
+      uniqueDatasources.size > 1
+        ? MIXED_DATASOURCE_NAME
+        : selectedQueries.find((q) => q.datasource?.uid)?.datasource?.uid;
+    if (targetDatasourceUid && datasourceInstance?.uid !== targetDatasourceUid) {
+      await changeDatasource({ exploreId, datasource: { uid: targetDatasourceUid } });
+    }
+    setQueries(exploreId, selectedQueries);
+  };
+
   renderEmptyState(exploreContainerStyles: string) {
     return (
       <div className={cx(exploreContainerStyles)}>
@@ -401,7 +470,7 @@ export class Explore extends PureComponent<Props, ExploreState> {
             timeRange={queryResponse.timeRange}
             height={400}
             width={width}
-            splitOpenFn={this.onSplitOpen(pluginId)}
+            splitOpenFn={this.getSplitOpenFn(pluginId)}
             eventBus={eventBus}
           />
         </ContentOutlineItem>
@@ -422,7 +491,7 @@ export class Explore extends PureComponent<Props, ExploreState> {
           timeZone={timeZone}
           onChangeTime={this.onUpdateTimeRange}
           annotations={queryResponse.annotations}
-          splitOpenFn={this.onSplitOpen('graph')}
+          splitOpenFn={this.getSplitOpenFn('graph')}
           loadingState={queryResponse.state}
           eventBus={this.graphEventBus}
           queriesChangedIndexAtRun={queriesChangedIndexAtRun}
@@ -441,7 +510,7 @@ export class Explore extends PureComponent<Props, ExploreState> {
           exploreId={exploreId}
           onCellFilterAdded={this.onCellFilterAdded}
           timeZone={timeZone}
-          splitOpenFn={this.onSplitOpen('table')}
+          splitOpenFn={this.getSplitOpenFn('table')}
           eventBus={eventBus}
         />
       </ContentOutlineItem>
@@ -463,13 +532,11 @@ export class Explore extends PureComponent<Props, ExploreState> {
           exploreId={exploreId}
           onCellFilterAdded={datasourceInstance?.modifyQuery ? this.onCellFilterAdded : undefined}
           timeZone={timeZone}
-          splitOpenFn={this.onSplitOpen('table')}
+          splitOpenFn={this.getSplitOpenFn('table')}
         />
       </ContentOutlineItem>
     );
   }
-
-  splitOpenFnLogs = this.onSplitOpen('logs');
 
   renderLogsPanel(width: number) {
     const { exploreId, syncedTimes, theme, queryResponse } = this.props;
@@ -497,7 +564,7 @@ export class Explore extends PureComponent<Props, ExploreState> {
           onStartScanning={this.onStartScanning}
           onStopScanning={this.onStopScanning}
           eventBus={this.logsEventBus}
-          splitOpenFn={this.splitOpenFnLogs}
+          splitOpenFn={this.getSplitOpenFn('logs')}
           isFilterLabelActive={this.isFilterLabelActive}
           onClickFilterString={this.onClickFilterString}
           onClickFilterOutString={this.onClickFilterOutString}
@@ -508,15 +575,7 @@ export class Explore extends PureComponent<Props, ExploreState> {
   }
 
   renderLogsSamplePanel() {
-    const {
-      logsSample,
-      timeZone,
-      setSupplementaryQueryEnabled,
-      exploreId,
-      datasourceInstance,
-      queries,
-      queryResponse,
-    } = this.props;
+    const { logsSample, timeZone, datasourceInstance, queries, queryResponse } = this.props;
 
     return (
       <ContentOutlineItem
@@ -530,10 +589,8 @@ export class Explore extends PureComponent<Props, ExploreState> {
           enabled={logsSample.enabled}
           queries={queries}
           datasourceInstance={datasourceInstance}
-          splitOpen={this.onSplitOpen('logsSample')}
-          setLogsSampleEnabled={(enabled: boolean) =>
-            setSupplementaryQueryEnabled(exploreId, enabled, SupplementaryQueryType.LogsSample)
-          }
+          splitOpen={this.getSplitOpenFn('logsSample')}
+          setLogsSampleEnabled={this.setLogsSampleEnabled}
           timeRange={queryResponse.timeRange}
         />
       </ContentOutlineItem>
@@ -555,7 +612,7 @@ export class Explore extends PureComponent<Props, ExploreState> {
           exploreId={exploreId}
           withTraceView={showTrace}
           datasourceType={datasourceType}
-          splitOpenFn={this.onSplitOpen('nodeGraph')}
+          splitOpenFn={this.getSplitOpenFn('nodeGraph')}
         />
       </ContentOutlineItem>
     );
@@ -576,16 +633,18 @@ export class Explore extends PureComponent<Props, ExploreState> {
 
   renderTraceViewPanel() {
     const { queryResponse, exploreId } = this.props;
-    const dataFrames = queryResponse.series.filter((series) => series.meta?.preferredVisualisationType === 'trace');
+    const dataFrames = queryResponse.traceFrames.length
+      ? queryResponse.traceFrames
+      : queryResponse.series.filter((series) => series.meta?.preferredVisualisationType === 'trace');
 
     return (
       // If there is no data (like 404) we show a separate error so no need to show anything here
-      dataFrames.length && (
+      Boolean(dataFrames.length) && (
         <ContentOutlineItem panelId="Traces" title={t('explore.explore.title-traces', 'Traces')} icon="file-alt">
           <TraceViewContainer
             exploreId={exploreId}
             dataFrames={dataFrames}
-            splitOpenFn={this.onSplitOpen('traceView')}
+            splitOpenFn={this.getSplitOpenFn('traceView')}
             scrollElement={this.scrollElement}
             timeRange={queryResponse.timeRange}
           />
@@ -614,7 +673,6 @@ export class Explore extends PureComponent<Props, ExploreState> {
       correlationEditorDetails,
       correlationEditorHelperData,
       showQueryInspector,
-      setShowQueryInspector,
       compact,
       queryLibraryRef,
     } = this.props;
@@ -642,55 +700,6 @@ export class Explore extends PureComponent<Props, ExploreState> {
     if (showCorrelationHelper && correlationEditorHelperData !== undefined) {
       correlationsBox = <CorrelationHelper exploreId={exploreId} correlations={correlationEditorHelperData} />;
     }
-
-    const selectQueriesFromLibrary = async (selectedQueries: DataQuery[]) => {
-      const { changeDatasource, queries, setQueries } = this.props;
-      if (selectedQueries.length === 0) {
-        return;
-      }
-      // Append each selected query with a fresh refId, computed against the
-      // growing array so queries added in the same batch don't collide.
-      const newQueries = [...queries];
-      for (const selectedQuery of selectedQueries) {
-        newQueries.push({
-          ...selectedQuery,
-          refId: getNextRefId(newQueries),
-        });
-      }
-      setQueries(exploreId, newQueries);
-      const selectedDatasourceUid = selectedQueries.find((q) => q.datasource?.uid)?.datasource?.uid;
-      if (selectedDatasourceUid) {
-        const uniqueDatasources = new Set(newQueries.map((q) => q.datasource?.uid));
-        const isMixed = uniqueDatasources.size > 1;
-        const newDatasourceRef = {
-          uid: isMixed ? MIXED_DATASOURCE_NAME : selectedDatasourceUid,
-        };
-        const shouldChangeDatasource = datasourceInstance?.uid !== newDatasourceRef.uid;
-        if (shouldChangeDatasource) {
-          await changeDatasource({ exploreId, datasource: newDatasourceRef });
-        }
-      }
-    };
-
-    // Replace the current queries with the selected ones, matching Query history's behavior:
-    // switch to the entry's datasource (Mixed when the queries span several) and run that set.
-    const replaceQueriesFromLibrary = async (selectedQueries: DataQuery[]) => {
-      const { changeDatasource, setQueries } = this.props;
-      if (selectedQueries.length === 0) {
-        return;
-      }
-      const uniqueDatasources = new Set(
-        selectedQueries.map((q) => q.datasource?.uid).filter((uid): uid is string => !!uid)
-      );
-      const targetDatasourceUid =
-        uniqueDatasources.size > 1
-          ? MIXED_DATASOURCE_NAME
-          : selectedQueries.find((q) => q.datasource?.uid)?.datasource?.uid;
-      if (targetDatasourceUid && datasourceInstance?.uid !== targetDatasourceUid) {
-        await changeDatasource({ exploreId, datasource: { uid: targetDatasourceUid } });
-      }
-      setQueries(exploreId, selectedQueries);
-    };
 
     return (
       <ContentOutlineContextProvider refreshDependencies={this.props.queries}>
@@ -738,9 +747,7 @@ export class Explore extends PureComponent<Props, ExploreState> {
                           // compact mode explicitly with a button in the UI instead of exiting when row is opened or
                           // content outline is opened.
                           isOpen={compact ? false : undefined}
-                          changeCompactMode={(compact: boolean) =>
-                            this.props.changeCompactMode(this.props.exploreId, false)
-                          }
+                          changeCompactMode={this.onChangeCompactMode}
                         />
                         <SecondaryActions
                           // do not allow people to add queries with potentially different datasources in correlations editor mode
@@ -752,10 +759,10 @@ export class Explore extends PureComponent<Props, ExploreState> {
                           addQueryRowButtonHidden={false}
                           queryInspectorButtonActive={showQueryInspector}
                           onClickAddQueryRowButton={this.onClickAddQueryRowButton}
-                          onClickQueryInspectorButton={() => setShowQueryInspector(!showQueryInspector)}
-                          onSelectQueryFromLibrary={(query) => selectQueriesFromLibrary([query])}
-                          onSelectQueriesFromLibrary={selectQueriesFromLibrary}
-                          onReplaceQueriesFromLibrary={replaceQueriesFromLibrary}
+                          onClickQueryInspectorButton={this.onToggleQueryInspector}
+                          onSelectQueryFromLibrary={this.onSelectQueryFromLibrary}
+                          onSelectQueriesFromLibrary={this.selectQueriesFromLibrary}
+                          onReplaceQueriesFromLibrary={this.replaceQueriesFromLibrary}
                         />
                         <ResponseErrorContainer exploreId={exploreId} />
                       </PanelContainer>
@@ -901,7 +908,6 @@ function mapStateToProps(state: StoreState, { exploreId }: ExploreProps) {
     showLogsSample,
     correlationEditorHelperData,
     correlationEditorDetails: explore.correlationEditorDetails,
-    exploreActiveDS: selectExploreDSMaps(state),
     queryLibraryRef,
     queriesChangedIndexAtRun,
   };
