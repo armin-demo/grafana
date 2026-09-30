@@ -1,0 +1,73 @@
+{
+  "name": "Evergreen",
+  "id": "evergreen",
+  "colors": {
+    "mode": "dark",
+    "border": {
+      "weak": "rgba(160, 210, 180, 0.12)",
+      "medium": "rgba(160, 210, 180, 0.20)",
+      "strong": "rgba(160, 210, 180, 0.30)"
+    },
+    "text": {
+      "primary": "#e6f2ea",
+      "secondary": "rgba(200, 225, 210, 0.75)",
+      "disabled": "rgba(200, 225, 210, 0.5)",
+      "link": "#5fe39a",
+      "maxContrast": "#FFFFFF"
+    },
+    "primary": {
+      "main": "#3ddc84",
+      "text": "#7ee8ad",
+      "border": "#3ddc84",
+      "name": "primary",
+      "shade": "#5fe39a",
+      "transparent": "#3ddc8426",
+      "contrastText": "#0b1410",
+      "borderTransparent": "#3ddc8440"
+    },
+    "secondary": {
+      "main": "rgba(160, 210, 180, 0.10)",
+      "shade": "rgba(160, 210, 180, 0.14)",
+      "transparent": "rgba(160, 210, 180, 0.08)",
+      "text": "rgb(200, 225, 210)",
+      "contrastText": "rgb(200, 225, 210)",
+      "border": "rgba(160, 210, 180, 0.08)",
+      "name": "secondary",
+      "borderTransparent": "rgba(160, 210, 180, 0.25)"
+    },
+    "accent": {
+      "main": "#3ddc84",
+      "text": "#7ee8ad",
+      "border": "#3ddc84",
+      "name": "accent",
+      "shade": "#5fe39a",
+      "transparent": "#3ddc8426",
+      "contrastText": "#0b1410",
+      "borderTransparent": "#3ddc8440"
+    },
+    "background": {
+      "canvas": "#0b1410",
+      "page": "#0f1a14",
+      "primary": "#14221b",
+      "secondary": "#1c3026",
+      "elevated": "#1c3026"
+    },
+    "action": {
+      "hover": "rgba(160, 210, 180, 0.16)",
+      "selected": "rgba(160, 210, 180, 0.12)",
+      "selectedBorder": "#3ddc84",
+      "focus": "rgba(160, 210, 180, 0.16)",
+      "hoverOpacity": 0.08,
+      "disabledText": "rgba(200, 225, 210, 0.5)",
+      "disabledBackground": "rgba(160, 210, 180, 0.04)",
+      "disabledOpacity": 0.38
+    },
+    "gradients": {
+      "brandHorizontal": "linear-gradient(270deg, #3ddc84 0%, #a8f0c6 100%)",
+      "brandVertical": "linear-gradient(0.01deg, #3ddc84 0.01%, #a8f0c6 99.99%)"
+    },
+    "contrastThreshold": 3,
+    "hoverFactor": 0.03,
+    "tonalOffset": 0.15
+  }
+}
