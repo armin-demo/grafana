@@ -156,7 +156,12 @@ describe('SharedPreferencesFunctional', () => {
     const capture = captureRequests();
     const { user } = await setup();
 
-    await selectComboboxOptionInTest(await screen.findByRole('combobox', { name: /Interface theme/ }), 'Gilded grove');
+    // The combobox list is virtualized and only renders the first few options in tests, so pick one of the
+    // first experimental (dark) themes alphabetically
+    await selectComboboxOptionInTest(
+      await screen.findByRole('combobox', { name: /Interface theme/ }),
+      'Deuteranopia/Protanopia Dark'
+    );
 
     await user.click(screen.getByText('Save preferences'));
 
@@ -164,7 +169,7 @@ describe('SharedPreferencesFunctional', () => {
     const newPreferences = await getPrefsUpdateRequest(requests);
 
     expect(newPreferences).toMatchObject({
-      spec: { theme: 'gildedgrove' },
+      spec: { theme: 'deut_prot_dark' },
     });
   });
 
