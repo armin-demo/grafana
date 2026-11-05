@@ -27,7 +27,15 @@ BUCKET="gs://$GCP_REPO_BUCKET/$RELEASE_TYPE/$REPO"
 
 # Update the repo and db on gcp
 gsutil -m cp /rpm-repo/*.rpm "$BUCKET" # sync binaries first to avoid cache misses
-gsutil -m rsync -r -d /rpm-repo "$BUCKET"
+
+# Upload the content-addressed metadata before repomd.xml references it, without deleting the old files yet
+gsutil -m rsync -r -x '^repomd\.xml(\.asc)?$' /rpm-repo/repodata "$BUCKET/repodata"
+
+# repomd.xml and its detached signature must always be served as a matching pair; if either is cached
+# independently, dnf fails with "repomd.xml GPG signature verification error: Bad GPG signature".
+gsutil -h "Cache-Control:no-cache, max-age=0" cp /rpm-repo/repodata/repomd.xml.asc /rpm-repo/repodata/repomd.xml "$BUCKET/repodata/"
+
+gsutil -m rsync -r -d -x '^repodata/repomd\.xml(\.asc)?$' /rpm-repo "$BUCKET"
 
 # usage:
 # [grafana]
